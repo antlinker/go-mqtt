@@ -1,0 +1,102 @@
+协议:MQTT 协议级别:4 清理会话:false 遗嘱标志:true 遗嘱Qos:1 遗嘱保留标志:true 密码标志:true 用户名标志: true 保持连接时间:80
+客户端id:testid
+遗嘱主题:/topic/test
+遗嘱消息:这是遗嘱消息
+用户名:中文
+密码:password
+10 47 0 4 4D 51 54 54 4 EC 0 50 0 6 74 65 73 74 69 64 0 B 2F 74 6F 70 69 63 2F 74 65 73 74 0 12 E8 BF 99 E6 98 AF E9 81 97 E5 98 B1 E6 B6 88 E6 81 AF 0 6 E4 B8 AD E6 96 87 0 8 70 61 73 73 77 6F 72 64 0 0 104700044D51545404EC00500006746573746964000B2F746F7069632F746573740012E8BF99E698AFE98197E598B1E6B688E681AF0006E4B8ADE69687000870617373776F72640000
+00044D51545404EC00500006746573746964000B2F746F7069632F746573740012E8BF99E698AFE98197E598B1E6B688E681AF0006E4B8ADE69687000870617373776F72640000
+解析后结果:
+协议:MQTT 协议级别:4 清理会话:false 遗嘱标志:true 遗嘱Qos:1 遗嘱保留标志:true 密码标志:true 用户名标志: true 保持连接时间:80
+客户端id:testid
+遗嘱主题:/topic/test
+遗嘱消息:这是遗嘱消息
+用户名:中文
+密码:password
+CONNACK当前会话标志:true 返回码:0 20 2 1 0 20020100
+0100
+解析后结果:
+CONNACK当前会话标志:true 返回码:1 PUBLISH重发标志:false 服务质量等级(Qos):1 保留标志:true 
+主题名:a/b
+报文标志:100
+有效载荷:E4B8ADE59BBDE4BABA
+33 10 0 3 61 2F 62 0 64 E4 B8 AD E5 9B BD E4 BA BA 33100003612F620064E4B8ADE59BBDE4BABA
+0003612F620064E4B8ADE59BBDE4BABA
+解析后结果:
+PUBLISH重发标志:false 服务质量等级(Qos):1 保留标志:true 
+主题名:a/b
+报文标志:100
+有效载荷:E4B8ADE59BBDE4BABA
+PUBACK会话标识:10000 40 2 27 10 40022710
+2710
+解析后结果:
+PUBACK会话标识:10000 PUBCOMP会话标识:10000 70 2 27 10 70022710
+2710
+解析后结果:
+PUBCOMP会话标识:10000 PUBREC会话标识:10000 50 2 27 10 50022710
+2710
+解析后结果:
+PUBREC会话标识:10000 PUBREL会话标识:10000 
+52 2 27 10 52022710
+2710
+解析后结果:
+PUBREL会话标识:10000 PASS
+BenchmarkConnectFullValue	 5000000	       334 ns/op
+BenchmarkConnectFullValue2	 5000000	       336 ns/op
+BenchmarkConnectPacketLen	500000000	         7.31 ns/op
+BenchmarkConnectPacket	 5000000	       305 ns/op
+BenchmarkConnectUnPacket	10000000	       154 ns/op
+BenchmarkNewConnect	50000000	        32.2 ns/op
+BenchmarkPubackFullValue	2000000000	         0.80 ns/op
+BenchmarkPubackPacket	20000000	        99.2 ns/op
+BenchmarkPubackUnPacket	100000000	        10.5 ns/op
+BenchmarkNewPuback	500000000	         4.00 ns/op
+BenchmarkConnbakFullValue	2000000000	         1.20 ns/op
+BenchmarkConnbakPacket	50000000	        32.6 ns/op
+BenchmarkConnbakUnPacket	100000000	        12.5 ns/op
+BenchmarkNewConnbak	500000000	         4.02 ns/op
+BenchmarkPublishFullValue	50000000	        68.3 ns/op
+BenchmarkPublishFullValue2	20000000	       130 ns/op
+BenchmarkPublishPacketLen	2000000000	         1.21 ns/op
+BenchmarkPublishPacket	10000000	       216 ns/op
+BenchmarkPublishUnPacket	100000000	        24.5 ns/op
+BenchmarkNewPublish	100000000	        18.4 ns/op
+BenchmarkPubcompFullValue	2000000000	         0.80 ns/op
+BenchmarkPubcompPacket	20000000	        99.3 ns/op
+BenchmarkPubcompUnPacket	100000000	        11.3 ns/op
+BenchmarkNewPubcomp	500000000	         4.00 ns/op
+BenchmarkPubrecFullValue	2000000000	         0.80 ns/op
+BenchmarkPubrecPacket	20000000	        99.0 ns/op
+BenchmarkPubrecUnPacket	100000000	        11.3 ns/op
+BenchmarkNewPubrec	500000000	         3.99 ns/op
+BenchmarkPubrelFullValue	2000000000	         0.80 ns/op
+BenchmarkPubrelPacket	20000000	        99.5 ns/op
+BenchmarkPubrelUnPacket	100000000	        11.3 ns/op
+BenchmarkNewPubrel	500000000	         3.99 ns/op
+BenchmarkSubscribeFullValue	10000000	       356 ns/op
+BenchmarkSubscribePacket	 5000000	       666 ns/op
+BenchmarkSubscribeUnPacket	 5000000	       549 ns/op
+BenchmarkNewSubscribe	 5000000	       505 ns/op
+BenchmarkUnSubscribeFullValue	10000000	       297 ns/op
+BenchmarkUnSubscribePacket	 1000000	      1114 ns/op
+BenchmarkUnSubscribeUnPacket	 5000000	       537 ns/op
+BenchmarkNewUnSubscribe	 5000000	       440 ns/op
+BenchmarkSubackFullValue	50000000	        54.3 ns/op
+BenchmarkSubackPacket	10000000	       232 ns/op
+BenchmarkSubackUnPacket	20000000	        73.6 ns/op
+BenchmarkNewSuback	 5000000	       382 ns/op
+BenchmarkUnSubackFullValue	2000000000	         0.80 ns/op
+BenchmarkUnSubackPacket	20000000	       122 ns/op
+BenchmarkUnSubackUnPacket	100000000	        11.3 ns/op
+BenchmarkNewUnSuback	500000000	         4.02 ns/op
+BenchmarkPingreqPacket	500000000	         5.04 ns/op
+BenchmarkPingreqUnPacket	500000000	         7.20 ns/op
+BenchmarkNewPingreq	1000000000	         2.80 ns/op
+BenchmarkPingrespPacket	500000000	         5.03 ns/op
+BenchmarkPingrespUnPacket	500000000	         7.22 ns/op
+BenchmarkNewPingresp	1000000000	         2.81 ns/op
+BenchmarkDisconnectPacket	500000000	         5.09 ns/op
+BenchmarkDisconnectUnPacket	500000000	         7.26 ns/op
+BenchmarkNewDisconnect	1000000000	         2.80 ns/op
+BenchmarkFixedHeader	20000000	        97.8 ns/op
+ok  	_/home/ybq/workspace/eggmqtt/src/github.com/antlinker/go-mqtt/packet	141.556s
