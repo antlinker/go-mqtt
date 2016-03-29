@@ -1,7 +1,14 @@
 # MQTT　golang 客户端 
 [![GoDoc](https://godoc.org/github.com/antlinker/go-mqtt/client?status.svg)](https://godoc.org/github.com/antlinker/go-mqtt/client)
 ## 支持
-支持mqtt 3.1.1协议,可以支持同步异步模式，支持事件模式，支持自动重连
+
+> 支持mqtt 3.1.1协议
+> 支持同步模式
+> 支持事件模式
+> 支持自动重连
+> 支持报文数量统计，支持tcp tls连接
+> 目前仅支持内存数据存储，可以扩展其他存储
+
 ## 获取
 
 ``` bash
