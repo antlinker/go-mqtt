@@ -54,6 +54,7 @@ type SubFilter struct {
 	qos    QoS
 }
 
+//MQTT客户端
 type MqttClienter interface {
 	MqttConner
 	MqttPublisher
@@ -63,6 +64,7 @@ type MqttClienter interface {
 	MqttDisConner
 }
 
+//MQTT连接器
 type MqttConner interface {
 	//开始连接
 	Connect() error
@@ -74,13 +76,14 @@ type MqttConner interface {
 	RemoveConnListener(listener MqttConnListener)
 }
 
+//MQTT消息发布消息接收
 type MqttPublisher interface {
 	//发布消息
 	Publish(topic string, qos QoS, retain bool, payload interface{}) (*MqttPacket, error)
 	//注册发布消息监听
-	AddPublishListener(listener MqttPublishListener)
+	AddPubListener(listener MqttPubListener)
 	//移除发布消息监听
-	RemovePublishListener(listener MqttPublishListener)
+	RemovePubListener(listener MqttPubListener)
 
 	//注册接收消息监听
 	AddRecvPubListener(listener MqttRecvPubListener)
@@ -88,6 +91,7 @@ type MqttPublisher interface {
 	RemoveRecvPubListener(listener MqttRecvPubListener)
 }
 
+//MQTT订阅
 type MqttSubscriber interface {
 	//订阅
 	Subscribe(filter string, qos QoS) (*MqttPacket, error)
@@ -96,6 +100,8 @@ type MqttSubscriber interface {
 	AddSubListener(listener MqttSubListener)
 	RemoveSubListener(listener MqttSubListener)
 }
+
+//MQTT取消订阅
 type MqttUnSubscriber interface {
 	//取消订阅
 	UnSubscribe(filter string) (*MqttPacket, error)
@@ -105,12 +111,15 @@ type MqttUnSubscriber interface {
 	RemoveUnSubListener(listener MqttUnSubListener)
 }
 
+//MQTT报文发送接收
 type MqttPackerListener interface {
 	//增加报文接收发送监听
 	AddPacketListener(listener MqttPacketListener)
 	//移除报文接收发送监听
 	RemovePacketListener(listener MqttPacketListener)
 }
+
+//MQTT连接断开
 type MqttDisConner interface {
 	//断开连接
 	Disconnect()
@@ -118,28 +127,4 @@ type MqttDisConner interface {
 	AddDisConnListener(listener MqttDisConnListener)
 	//移除报文接收发送监听
 	RemoveDisConnListener(listener MqttDisConnListener)
-}
-
-type BaseClientStatus struct {
-	//当前重连次数统计
-	curRecnt int64
-	//总重连次数统计
-	totalRecnt int64
-	//接收发布消息报文统计
-	recvPubCnt int64
-	//发布消息次数统计
-	pubcnt map[CntType]*pubCnt
-
-	//接收报文数量
-	recvPacketCnt int64
-	//发送报文数量
-	sendPacketCnt int64
-}
-
-func (c *BaseClientStatus) init() {
-	c.pubcnt = make(map[CntType]*pubCnt)
-	c.pubcnt[PubCnt_QoS0] = &pubCnt{}
-	c.pubcnt[PubCnt_QoS1] = &pubCnt{}
-	c.pubcnt[PubCnt_QoS2] = &pubCnt{}
-	c.pubcnt[PubCnt_TOTAL] = &pubCnt{}
 }

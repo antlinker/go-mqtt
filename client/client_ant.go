@@ -111,6 +111,31 @@ type MqttOption struct {
 	//心跳间隔间隔　，发出心跳后，检测心跳间隔时间单位秒
 	HeartbeatCheckInterval int
 }
+
+type baseClientStatus struct {
+	//当前重连次数统计
+	curRecnt int64
+	//总重连次数统计
+	totalRecnt int64
+	//接收发布消息报文统计
+	recvPubCnt int64
+	//发布消息次数统计
+	pubcnt map[CntType]*pubCnt
+
+	//接收报文数量
+	recvPacketCnt int64
+	//发送报文数量
+	sendPacketCnt int64
+}
+
+func (c *baseClientStatus) init() {
+	c.pubcnt = make(map[CntType]*pubCnt)
+	c.pubcnt[PubCnt_QoS0] = &pubCnt{}
+	c.pubcnt[PubCnt_QoS1] = &pubCnt{}
+	c.pubcnt[PubCnt_QoS2] = &pubCnt{}
+	c.pubcnt[PubCnt_TOTAL] = &pubCnt{}
+}
+
 type antClient struct {
 	mqttListen
 	//连接网址
@@ -158,7 +183,7 @@ func (c *antClient) SetPacketManager(manager PacketManager) {
 	c.packetManager = manager
 }
 func (c *antClient) init() error {
-	c.BaseClientStatus.init()
+	c.baseClientStatus.init()
 	return nil
 }
 func (c *antClient) IsConnect() bool {
@@ -239,7 +264,7 @@ func (c *antClient) Subscribe(filter string, qos QoS) (*MqttPacket, error) {
 	sub := packet.NewSubscribe(1)
 	topic := packet.NewTopic(filter)
 	sub.AddFilter(topic, packet.QoS(qos))
-	c.fireOnSubscribeStart(c, []SubFilter{{filter, qos}})
+	c.fireOnSubStart(c, []SubFilter{{filter, qos}})
 	return c.addPacket(sub)
 }
 
@@ -253,7 +278,7 @@ func (c *antClient) Subscribes(filters ...SubFilter) (*MqttPacket, error) {
 	for _, sf := range filters {
 		sub.AddFilter(packet.NewTopic(sf.filter), packet.QoS(sf.qos))
 	}
-	c.fireOnSubscribeStart(c, filters)
+	c.fireOnSubStart(c, filters)
 	return c.addPacket(sub)
 }
 
@@ -264,7 +289,7 @@ func (c *antClient) UnSubscribe(filter string) (*MqttPacket, error) {
 	}
 	unsub := packet.NewUnSubscribe(1)
 	unsub.AddFilter(filter)
-	defer c.fireOnUnSubscribeStart(c, []string{filter})
+	defer c.fireOnUnSubStart(c, []string{filter})
 	return c.addPacket(unsub)
 }
 
@@ -277,7 +302,7 @@ func (c *antClient) UnSubscribes(filters ...string) (*MqttPacket, error) {
 	for _, f := range filters {
 		unsub.AddFilter(f)
 	}
-	defer c.fireOnUnSubscribeStart(c, filters)
+	defer c.fireOnUnSubStart(c, filters)
 	return c.addPacket(unsub)
 }
 func (c *antClient) addPacket(msg packet.PacketIdMessage) (*MqttPacket, MqttError) {

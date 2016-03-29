@@ -178,7 +178,7 @@ func (c *antClient) doUnSuback(unsuback *packet.UnSuback) {
 	if pkt != nil {
 		unsub := pkt.Packet.(*packet.UnSubscribe)
 		pkt.finalish(nil)
-		c.fireOnUnSubscribeSuccess(c, unsub.GetFilters())
+		c.fireOnUnSubSuccess(c, unsub.GetFilters())
 	}
 }
 
@@ -202,7 +202,7 @@ func (c *antClient) doSuback(suback *packet.Suback) {
 			result = append(result, QoS(qos))
 		}
 		pkt.finalish(nil)
-		c.fireOnSubscribeSuccess(c, subfs, result)
+		c.fireOnSubSuccess(c, subfs, result)
 	} else {
 		Mlog.Warn("doSuback get faild:", pkt)
 	}

@@ -99,8 +99,8 @@ const (
 )
 
 //创建连接事件
-func createMqttPublishEvent(client MqttClienter, status PubStatus, pubcnt map[CntType]*pubCnt) *MqttPublishEvent {
-	event := &MqttPublishEvent{}
+func createMqttPubEvent(client MqttClienter, status PubStatus, pubcnt map[CntType]*pubCnt) *MqttPubEvent {
+	event := &MqttPubEvent{}
 	event.Init(EVENT_BULISH, client)
 	event.status = status
 	event.pubcnt = pubcnt
@@ -117,24 +117,24 @@ const (
 )
 
 //mqtt连接事件
-type MqttPublishEvent struct {
+type MqttPubEvent struct {
 	MqttEvent
 	status PubStatus
 	pubcnt map[CntType]*pubCnt
 }
 
 //获取完成报文统计数据
-func (e *MqttPublishEvent) GetFinalCnt(cntType CntType) int64 {
+func (e *MqttPubEvent) GetFinalCnt(cntType CntType) int64 {
 	return e.pubcnt[cntType].final
 }
 
 //获取发送报文统计数据
-func (e *MqttPublishEvent) GetSendCnt(cntType CntType) int64 {
+func (e *MqttPubEvent) GetSendCnt(cntType CntType) int64 {
 	return e.pubcnt[cntType].send
 }
 
 //获取成功发送报文统计数据
-func (e *MqttPublishEvent) GetSuccessCnt(cntType CntType) int64 {
+func (e *MqttPubEvent) GetSuccessCnt(cntType CntType) int64 {
 	return e.pubcnt[cntType].success
 }
 

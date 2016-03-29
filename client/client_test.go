@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	//"strconv"
 	"strconv"
 	"sync"
 
@@ -25,7 +26,7 @@ func (l *TestMqttListener) OnConnSuccess(event *MqttConnEvent) {
 	event.GetClient().Subscribe(l.subFilter, l.subQos)
 }
 
-func (l *TestMqttListener) OnSubscribeSuccess(event *MqttEvent, sub []SubFilter, result []QoS) {
+func (l *TestMqttListener) OnSubSuccess(event *MqttEvent, sub []SubFilter, result []QoS) {
 	Mlog.Debugf("OnSubscribeSuccess:%v:%v", sub, result)
 	event.GetClient().Publish(l.sendTopic, l.sendQos, l.sendRetain, l.sendPayload)
 }
@@ -39,7 +40,7 @@ func (l *TestMqttListener) OnRecvPublish(event *MqttRecvPubEvent, topic string, 
 
 type TestMqttListener2 struct {
 	DefaultConnListen
-	DefaultPublishListen
+	DefaultPubListen
 	sync.WaitGroup
 }
 
@@ -59,18 +60,18 @@ func (l *TestMqttListener3) OnConnSuccess(event *MqttConnEvent) {
 }
 
 type TestMqttListener4 struct {
-	DefaultPublishListen
+	DefaultPubListen
 	sync.WaitGroup
 }
 
-func (*TestMqttListener4) OnPubReady(event *MqttPublishEvent, mp *MqttPacket) {
+func (*TestMqttListener4) OnPubReady(event *MqttPubEvent, mp *MqttPacket) {
 	//Mlog.Debugf("OnPubReady:%v", event.GetSendCnt(PubCnt_TOTAL))
 }
-func (*TestMqttListener4) OnPubSuccess(event *MqttPublishEvent, mp *MqttPacket) {
+func (*TestMqttListener4) OnPubSuccess(event *MqttPubEvent, mp *MqttPacket) {
 	//Mlog.Debugf("OnPubSuccess:%v", mp.Packet)
 
 }
-func (l *TestMqttListener4) OnPubFinal(event *MqttPublishEvent, mp *MqttPacket) {
+func (l *TestMqttListener4) OnPubFinal(event *MqttPubEvent, mp *MqttPacket) {
 	//Mlog.Debugf("OnPubFinal:%v", mp.Packet)
 	l.Done()
 }
@@ -97,7 +98,7 @@ var _ = Describe("测试客户端连接", func() {
 			sendRetain:  false,
 		}
 		client.AddConnListener(listener)
-		client.AddPublishListener(listener)
+		client.AddPubListener(listener)
 		client.AddRecvPubListener(listener)
 		client.AddSubListener(listener)
 		client.AddDisConnListener(listener)
@@ -118,7 +119,7 @@ var _ = Describe("测试客户端连接", func() {
 		})
 		listener := &TestMqttListener2{}
 		client.AddConnListener(listener)
-		//client.AddPublishListener(listener)
+		//client.AddPubListener(listener)
 		//client.AddRecvPubListener(listener)
 		//client.AddSubListener(listener)
 		//client.AddDisConnListener(listener)
@@ -145,7 +146,7 @@ var _ = Describe("测试客户端连接", func() {
 		})
 		listener := &TestMqttListener2{}
 		client.AddConnListener(listener)
-		//client.AddPublishListener(listener)
+		//client.AddPubListener(listener)
 		//client.AddRecvPubListener(listener)
 
 		//client.AddDisConnListener(listener)
@@ -172,7 +173,7 @@ var _ = Describe("测试客户端连接", func() {
 		})
 		listener := &TestMqttListener2{}
 		client.AddConnListener(listener)
-		//client.AddPublishListener(listener)
+		//client.AddPubListener(listener)
 		//client.AddRecvPubListener(listener)
 		//client.AddSubListener(listener)
 		//client.AddDisConnListener(listener)
@@ -268,7 +269,7 @@ var _ = Describe("测试客户端连接", func() {
 			Addr: addr,
 		})
 		lis := &TestMqttListener4{}
-		client.AddPublishListener(lis)
+		client.AddPubListener(lis)
 		Expect(err).NotTo(HaveOccurred())
 		err = client.Connect()
 
@@ -294,7 +295,7 @@ var _ = Describe("测试客户端连接", func() {
 			Addr: addr,
 		})
 		lis := &TestMqttListener4{}
-		client.AddPublishListener(lis)
+		client.AddPubListener(lis)
 		Expect(err).NotTo(HaveOccurred())
 		err = client.Connect()
 
@@ -320,7 +321,7 @@ var _ = Describe("测试客户端连接", func() {
 			Addr: addr,
 		})
 		lis := &TestMqttListener4{}
-		client.AddPublishListener(lis)
+		client.AddPubListener(lis)
 		Expect(err).NotTo(HaveOccurred())
 		err = client.Connect()
 

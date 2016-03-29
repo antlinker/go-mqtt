@@ -32,7 +32,7 @@ var _ = Describe("测试客户端连接", func() {
 			sendRetain:  false,
 		}
 		client.AddConnListener(listener)
-		client.AddPublishListener(listener)
+		client.AddPubListener(listener)
 		client.AddRecvPubListener(listener)
 		client.AddSubListener(listener)
 		client.AddDisConnListener(listener)
