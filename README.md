@@ -8,6 +8,8 @@ $ go get github.com/antlinker/go-mqtt/client
 ```
 ## API使用
 
+	[api连接](https://godoc.org/github.com/antlinker/go-mqtt/client)
+
 ### 客户端创建
 ```go
 
