@@ -1,4 +1,5 @@
 # MQTT　golang 客户端 
+[![GoDoc](https://godoc.org/github.com/antlinker/go-mqtt/client?status.svg)](https://godoc.org/github.com/antlinker/go-mqtt/client)
 ## 支持
 支持mqtt 3.1.1协议,可以支持同步异步模式，支持事件模式，支持自动重连
 ## 获取
@@ -9,7 +10,7 @@ $ go get github.com/antlinker/go-mqtt/client
 ## API使用
 
 	[api连接](https://godoc.org/github.com/antlinker/go-mqtt/client)
-
+	
 ### 客户端创建
 ```go
 
