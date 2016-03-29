@@ -42,6 +42,13 @@ const (
 	Refused = 0x80
 )
 
+func CreateSubFilter(filter string, qos QoS) SubFilter {
+	return SubFilter{
+		filter: filter,
+		qos:    qos,
+	}
+}
+
 type SubFilter struct {
 	filter string
 	qos    QoS

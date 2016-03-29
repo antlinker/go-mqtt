@@ -88,7 +88,15 @@ func createMqttConnEvent(client MqttClienter, status ConnStatus, curRecnt, total
 
 }
 
+//统计发布数据类型
 type CntType int
+
+const (
+	PubCnt_QoS0 CntType = iota
+	PubCnt_QoS1
+	PubCnt_QoS2
+	PubCnt_TOTAL
+)
 
 //创建连接事件
 func createMqttPublishEvent(client MqttClienter, status PubStatus, pubcnt map[CntType]*pubCnt) *MqttPublishEvent {

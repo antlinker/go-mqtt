@@ -7,22 +7,20 @@ import (
 	"github.com/antlinker/go-mqtt/packet"
 )
 
-const (
-	PubCnt_QoS0 CntType = iota
-	PubCnt_QoS1
-	PubCnt_QoS2
-	PubCnt_TOTAL
-)
-
 type pubCnt struct {
 	send    int64
 	success int64
 	final   int64
 }
+
+//连接事件
 type MqttConnListener interface {
 	event.Listener
+	//开始建立连接
 	OnConnStart(event *MqttConnEvent)
+	//连接成功
 	OnConnSuccess(event *MqttConnEvent)
+	//连接失败
 	OnConnFailure(event *MqttConnEvent, returncode int, err error)
 }
 
@@ -60,6 +58,7 @@ func (cl *mqttListen) fireOnConnFailure(client MqttClienter, returncode int, err
 	**/
 type MqttPublishListener interface {
 	event.Listener
+	//准备发送消息
 	OnPubReady(event *MqttPublishEvent, packet *MqttPacket)
 	OnPubSuccess(event *MqttPublishEvent, packet *MqttPacket)
 	OnPubFinal(event *MqttPublishEvent, packet *MqttPacket)
@@ -205,8 +204,8 @@ func (cl *mqttListen) fireOnSendPacket(client MqttClienter, packet packet.Messag
 
 type MqttDisConnListener interface {
 	event.Listener
-
-	OnDisconnect(event *MqttEvent)
+	OnDisconning(event *MqttEvent)
+	OnDisconned(event *MqttEvent)
 	OnLostConn(event *MqttEvent, err error)
 }
 
@@ -220,8 +219,11 @@ func (cl *mqttListen) RemoveDisConnListener(listener MqttDisConnListener) {
 	cl.RemoveListener(EVENT_DISCONNECT, listener)
 }
 
-func (cl *mqttListen) fireOnDisconnect(client MqttClienter) {
-	cl.FireListener(EVENT_DISCONNECT, "OnDisconnect", createMqttEvent(client, EVENT_DISCONNECT))
+func (cl *mqttListen) fireOnDisconning(client MqttClienter) {
+	cl.FireListener(EVENT_DISCONNECT, "OnDisconning", createMqttEvent(client, EVENT_DISCONNECT))
+}
+func (cl *mqttListen) fireOnDisconned(client MqttClienter) {
+	cl.FireListener(EVENT_DISCONNECT, "OnDisconned", createMqttEvent(client, EVENT_DISCONNECT))
 }
 func (cl *mqttListen) fireOnLostConn(client MqttClienter, err error) {
 	cl.FireListener(EVENT_DISCONNECT, "OnLostConn", createMqttEvent(client, EVENT_DISCONNECT), err)
@@ -239,73 +241,158 @@ type DefaultConnListen struct {
 }
 
 func (*DefaultConnListen) OnConnStart(event *MqttConnEvent) {
-	Mlog.Debugf("OnConnStart:共连接:%d,本次连接:%d", event.GetTotalRecnt(), event.GetCurRecnt())
 }
 func (*DefaultConnListen) OnConnSuccess(event *MqttConnEvent) {
-	Mlog.Debugf("OnConnSuccess:共连接:%d,本次连接:%d", event.GetTotalRecnt(), event.GetCurRecnt())
+
 }
 func (*DefaultConnListen) OnConnFailure(event *MqttConnEvent, returncode int, err error) {
-	Mlog.Debugf("OnConnFailure(%d):%v", returncode, err)
+
 }
 
 type DefaultSubscribeListen struct {
 }
 
 func (*DefaultSubscribeListen) OnSubscribeStart(event *MqttEvent, sub []SubFilter) {
-	Mlog.Debugf("OnSubscribeStart:%v", sub)
 }
 func (*DefaultSubscribeListen) OnSubscribeSuccess(event *MqttEvent, sub []SubFilter, result []QoS) {
-	Mlog.Debugf("OnSubscribeSuccess:%v:%v", sub, result)
-
 }
 
 type DefaultUnSubListen struct {
 }
 
 func (*DefaultUnSubListen) OnUnSubscribeStart(event *MqttEvent, filter []string) {
-	Mlog.Debugf("OnUnSubscribeStart:%v", filter)
+
 }
 func (*DefaultUnSubListen) OnUnSubscribeSuccess(event *MqttEvent, filter []string) {
-	Mlog.Debugf("OnUnSubscribeSuccess:%v", filter)
+
 }
 
 type DefaultPublishListen struct {
 }
 
 func (*DefaultPublishListen) OnPubReady(event *MqttPublishEvent, mp *MqttPacket) {
-	Mlog.Debugf("OnPubReady:%v", event.GetSendCnt(PubCnt_TOTAL))
+
 }
 func (*DefaultPublishListen) OnPubSuccess(event *MqttPublishEvent, mp *MqttPacket) {
-	Mlog.Debugf("OnPubSuccess:%v", mp.Packet)
 
 }
 func (*DefaultPublishListen) OnPubFinal(event *MqttPublishEvent, mp *MqttPacket) {
-	Mlog.Debugf("OnPubFinal:%v", mp.Packet)
+
 }
 
 type DefaultRecvPubListen struct {
 }
 
 func (l *DefaultRecvPubListen) OnRecvPublish(event *MqttRecvPubEvent, topic string, payload []byte, qos QoS) {
-	Mlog.Debugf("OnRecvPublish:%s(%d) :%s", topic, qos, string(payload))
+
 }
 
 type DefaultPacketListen struct {
 }
 
 func (l *DefaultPacketListen) OnRecvPacket(event *MqttEvent, packet packet.MessagePacket, recvPacketCnt int64) {
-	Mlog.Debugf("OnRecvPacket:(%d) :%v", recvPacketCnt, packet)
+
 }
 func (l *DefaultPacketListen) OnSendPacket(event *MqttEvent, packet packet.MessagePacket, sendPacketCnt int64) {
-	Mlog.Debugf("OnSendPacket:(%d) :%v", sendPacketCnt, packet)
+
 }
 
 type DefaultDisConnListen struct {
 }
 
-func (l *DefaultDisConnListen) OnDisconnect(event *MqttEvent) {
-	Mlog.Debugf("OnDisconnect")
+func (l *DefaultDisConnListen) OnDisconning(event *MqttEvent) {
+
+}
+func (l *DefaultDisConnListen) OnDisconned(event *MqttEvent) {
+
 }
 func (l *DefaultDisConnListen) OnLostConn(event *MqttEvent, err error) {
+
+}
+
+type DefaultPrintListener struct {
+	DefaultPrintConnListen
+	DefaultPrintSubscribeListen
+	DefaultPrintPacketListen
+	DefaultPrintDisConnListen
+	DefaultPrintPublishListen
+	DefaultPrintRecvPubListen
+}
+type DefaultPrintConnListen struct {
+}
+
+func (*DefaultPrintConnListen) OnConnStart(event *MqttConnEvent) {
+	Mlog.Debugf("OnConnStart:共连接:%d,本次连接:%d", event.GetTotalRecnt(), event.GetCurRecnt())
+}
+func (*DefaultPrintConnListen) OnConnSuccess(event *MqttConnEvent) {
+	Mlog.Debugf("OnConnSuccess:共连接:%d,本次连接:%d", event.GetTotalRecnt(), event.GetCurRecnt())
+}
+func (*DefaultPrintConnListen) OnConnFailure(event *MqttConnEvent, returncode int, err error) {
+	Mlog.Debugf("OnConnFailure(%d):%v", returncode, err)
+}
+
+type DefaultPrintSubscribeListen struct {
+}
+
+func (*DefaultPrintSubscribeListen) OnSubscribeStart(event *MqttEvent, sub []SubFilter) {
+	Mlog.Debugf("OnSubscribeStart:%v", sub)
+}
+func (*DefaultPrintSubscribeListen) OnSubscribeSuccess(event *MqttEvent, sub []SubFilter, result []QoS) {
+	Mlog.Debugf("OnSubscribeSuccess:%v:%v", sub, result)
+
+}
+
+type DefaultPrintUnSubListen struct {
+}
+
+func (*DefaultPrintUnSubListen) OnUnSubscribeStart(event *MqttEvent, filter []string) {
+	Mlog.Debugf("OnUnSubscribeStart:%v", filter)
+}
+func (*DefaultPrintUnSubListen) OnUnSubscribeSuccess(event *MqttEvent, filter []string) {
+	Mlog.Debugf("OnUnSubscribeSuccess:%v", filter)
+}
+
+type DefaultPrintPublishListen struct {
+}
+
+func (*DefaultPrintPublishListen) OnPubReady(event *MqttPublishEvent, mp *MqttPacket) {
+	Mlog.Debugf("OnPubReady:%v", event.GetSendCnt(PubCnt_TOTAL))
+}
+func (*DefaultPrintPublishListen) OnPubSuccess(event *MqttPublishEvent, mp *MqttPacket) {
+	Mlog.Debugf("OnPubSuccess:%v", mp.Packet)
+
+}
+func (*DefaultPrintPublishListen) OnPubFinal(event *MqttPublishEvent, mp *MqttPacket) {
+	Mlog.Debugf("OnPubFinal:%v", mp.Packet)
+}
+
+type DefaultPrintRecvPubListen struct {
+}
+
+func (l *DefaultPrintRecvPubListen) OnRecvPublish(event *MqttRecvPubEvent, topic string, payload []byte, qos QoS) {
+	Mlog.Debugf("OnRecvPublish:%s(%d) :%s", topic, qos, string(payload))
+}
+
+type DefaultPrintPacketListen struct {
+}
+
+func (l *DefaultPrintPacketListen) OnRecvPacket(event *MqttEvent, packet packet.MessagePacket, recvPacketCnt int64) {
+	Mlog.Debugf("OnRecvPacket:(%d) :%v", recvPacketCnt, packet)
+}
+func (l *DefaultPrintPacketListen) OnSendPacket(event *MqttEvent, packet packet.MessagePacket, sendPacketCnt int64) {
+	Mlog.Debugf("OnSendPacket:(%d) :%v", sendPacketCnt, packet)
+}
+
+type DefaultPrintDisConnListen struct {
+}
+
+func (l *DefaultPrintDisConnListen) OnLostConn(event *MqttEvent, err error) {
 	Mlog.Debugf("OnLostConn :%v", err)
+}
+
+func (l *DefaultPrintDisConnListen) OnDisconning(event *MqttEvent) {
+	Mlog.Debugf("OnDisconning")
+}
+func (l *DefaultPrintDisConnListen) OnDisconned(event *MqttEvent) {
+	Mlog.Debugf("OnDisconned")
 }

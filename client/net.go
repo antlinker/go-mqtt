@@ -17,7 +17,6 @@ func (c *antClient) fisrtConnect() error {
 		return err
 	}
 	c.creReceive()
-	c.setIssend(true)
 
 	c.fireOnConnSuccess(c)
 	return nil

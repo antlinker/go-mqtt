@@ -172,39 +172,45 @@ func (c *antClient) Connect() error {
 	if c.connected {
 		return nil
 	}
+	c.connected = true
 	if c.packetManager == nil {
-
 		c.packetManager = NewMemPacketManager(c)
+		c.packetManager.Start()
+		c.recvChan = make(chan packet.MessagePacket)
+		c.sendcond = sync.NewCond(&c.connlock)
+		c.creGoSend()
+		c.creDoReceive()
 	}
-	c.packetManager.Start()
-	c.recvChan = make(chan packet.MessagePacket)
-	c.sendcond = sync.NewCond(&c.connlock)
-	c.creGoSend()
-	c.creDoReceive()
+
 	err := c.fisrtConnect()
 	if err != nil {
+		c.connected = false
 		return err
 	}
-
-	c.connected = true
+	c.setIssend(true)
 	return nil
 }
 
 //断开连接
 func (c *antClient) Disconnect() {
+	c.connlock.Lock()
+	if !c.connected {
+		return
+	}
+	c.fireOnDisconning(c)
 	c.connected = false
-
+	c.connlock.Unlock()
 	c.setIssend(false)
 	c.conn.SendMessage(disconnect)
 	c.conn.Close()
 	c.runGoWait.Wait()
-	c.fireOnDisconnect(c)
 	c.packetManager.Stop()
 	c.sendcond.L.Lock()
 	c.sendcond.Signal()
 	c.sendcond.L.Unlock()
 	close(c.recvChan)
 	c.disconnectWait.Wait()
+	c.fireOnDisconned(c)
 }
 
 //发布消息
