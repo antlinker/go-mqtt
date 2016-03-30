@@ -113,13 +113,9 @@ func (c *antClient) doPublish(publish *packet.Publish) {
 	case packet.QOS_2:
 		pubrec := packet.NewPubrec()
 		pubrec.SetPacketId(packetid)
-
-		c._send(pubrec)
-		if c.packetManager.ExistsReveivePacket(packetid) {
-			//存在丢弃
-			return
-		}
 		c.packetManager.AddReceivePacket(CreateMqttPacket(Direct_Recive, publish))
+		c._send(pubrec)
+
 		return
 	}
 }

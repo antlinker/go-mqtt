@@ -119,7 +119,8 @@ func (m *MemPacketManager) unfinal2send() {
 	for _, q := range sqos2map {
 		mp := q.(*MqttPacket)
 		msg := mp.Packet
-		if mp.Rectime().Add(m.reSendInterval).Sub(time.Now()) >= 0 {
+
+		if mp.Rectime().Add(m.reSendInterval).Sub(time.Now()) <= 0 {
 			pubrel := packet.NewPubrel()
 			pubrel.SetPacketId(msg.GetPacketId())
 			m.Send(pubrel)
@@ -271,7 +272,9 @@ type memReceiveQos2 struct {
 
 //qos2存储id
 func (m *memReceiveQos2) AddReceivePacket(mp *MqttPacket) {
+
 	m.recvQsos2Map.Set(mp.Packet.GetPacketId(), mp)
+
 }
 
 //检测qos2
