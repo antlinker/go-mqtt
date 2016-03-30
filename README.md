@@ -14,6 +14,12 @@
 ``` bash
 $ go get github.com/antlinker/go-mqtt/client
 ```
+
+## 例子
+
+* 参考例子项目[mqttgroup](https://github.com/antlinker/mqttgroup)的go-mqtt分支
+* 参考例子项目[mqttpersonal](https://github.com/antlinker/mqttpersonal)的go-mqtt分支
+
 ## API使用
 	
 ### 客户端创建
