@@ -21,7 +21,7 @@ var _ = Describe("测试客户端连接", func() {
 
 		client, err := CreateClient(MqttOption{
 			Addr: addr,
-			Tls:  tlsconfg,
+			TLS:  tlsconfg,
 		})
 		listener := &TestMqttListener{
 			subFilter:   "test",

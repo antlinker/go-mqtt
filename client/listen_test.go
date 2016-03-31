@@ -17,19 +17,19 @@ type TestConnListen struct {
 func (l *TestConnListen) OnConnStart(event *MqttConnEvent) {
 	l.stopchan <- 1
 	Expect(event.GetClient().IsConnect()).To(BeTrue())
-	Expect(event.GetStatus()).To(Equal(STATUS_CONN_START))
+	Expect(event.GetStatus()).To(Equal(StatusConnStart))
 
 }
 func (l *TestConnListen) OnConnSuccess(event *MqttConnEvent) {
 	l.stopchan <- 2
 	Expect(event.GetClient().IsConnect()).To(BeTrue())
-	Expect(event.GetStatus()).To(Equal(STATUS_CONN_SUCCESS))
+	Expect(event.GetStatus()).To(Equal(StatusConnSuccess))
 
 }
 func (l *TestConnListen) OnConnFailure(event *MqttConnEvent, returncode int, err error) {
 	l.stopchan <- 3
 	Expect(event.GetClient().IsConnect()).To(BeTrue())
-	Expect(event.GetStatus()).To(Equal(STATUS_CONN_FAILURE))
+	Expect(event.GetStatus()).To(Equal(StatusConnFailure))
 }
 
 type TestDisConnListen struct {

@@ -7,17 +7,25 @@ import (
 )
 
 const (
-	EVENT_CONN int = iota
-	EVENT_BULISH
-	EVENT_RECVBULISH
-	EVENT_SUBSCRIBE
-	EVENT_UNSUBSCRIBE
-	EVENT_PACKET
-	EVENT_DISCONNECT
+	//连接事件
+	EventConn int = iota
+	//发布消息事件
+	EventPublish
+	//接收消息事件
+	EventRecvPub
+	//订阅主题事件
+	EventSubscribe
+	//取消订阅事件
+	EventUnSub
+	//消息报文事件
+	EventPacket
+	//断开连接事件
+	EventDisconn
 )
 
 //基础mqtt事件
 type MqttEvent struct {
+	//事件基础实现
 	event.BaseEvent
 	client    MqttClienter
 	occurtime time.Time
@@ -28,6 +36,10 @@ func createMqttEvent(client MqttClienter, mtype int) *MqttEvent {
 	event.Init(mtype, client)
 	return event
 }
+
+//初始化事件
+//etype 事件类型
+//client 客户端
 func (e *MqttEvent) Init(etype int, client MqttClienter) {
 	e.BaseEvent.Init(etype, client)
 	e.client = client
@@ -44,16 +56,21 @@ func (e *MqttEvent) GetOccurtime() time.Time {
 	return e.occurtime
 }
 
+//连接状态
 type ConnStatus int
 
 const (
-	STATUS_CONN_START ConnStatus = iota
-	STATUS_CONN_SUCCESS
-	STATUS_CONN_FAILURE
+	//连接开始事件
+	StatusConnStart ConnStatus = iota
+	//连接成功
+	StatusConnSuccess
+	//连接失败
+	StatusConnFailure
 )
 
 //mqtt连接事件
 type MqttConnEvent struct {
+	//事件基础实现
 	MqttEvent
 	status ConnStatus
 	//总连接次数
@@ -80,7 +97,7 @@ func (e *MqttConnEvent) GetStatus() ConnStatus {
 //创建连接事件
 func createMqttConnEvent(client MqttClienter, status ConnStatus, curRecnt, totalRecnt int64) *MqttConnEvent {
 	event := &MqttConnEvent{}
-	event.Init(EVENT_CONN, client)
+	event.Init(EventConn, client)
 	event.status = status
 	event.curRecnt = curRecnt
 	event.totalRecnt = totalRecnt
@@ -92,22 +109,23 @@ func createMqttConnEvent(client MqttClienter, status ConnStatus, curRecnt, total
 type CntType int
 
 const (
-	PubCnt_QoS0 CntType = iota
-	PubCnt_QoS1
-	PubCnt_QoS2
-	PubCnt_TOTAL
+	PubCntQoS0 CntType = iota
+	PubCntQoS1
+	PubCntQoS2
+	PubCntTOTAL
 )
 
 //创建连接事件
 func createMqttPubEvent(client MqttClienter, status PubStatus, pubcnt map[CntType]*pubCnt) *MqttPubEvent {
 	event := &MqttPubEvent{}
-	event.Init(EVENT_BULISH, client)
+	event.Init(EventPublish, client)
 	event.status = status
 	event.pubcnt = pubcnt
 	return event
 
 }
 
+//发布状态
 type PubStatus int
 
 const (
@@ -141,7 +159,7 @@ func (e *MqttPubEvent) GetSuccessCnt(cntType CntType) int64 {
 //创建连接事件
 func createMqttRecvPubEvent(client MqttClienter, recvCnt int64) *MqttRecvPubEvent {
 	event := &MqttRecvPubEvent{}
-	event.Init(EVENT_RECVBULISH, client)
+	event.Init(EventRecvPub, client)
 	event.recvCnt = recvCnt
 	return event
 

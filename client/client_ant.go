@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ClientIdPre = "antMqtt_"
+	clientIdPre = "antMqtt_"
 )
 
 var _zfc = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -25,15 +25,17 @@ var _zfcrand = rand.New(rand.NewSource(time.Now().Unix()))
 func createRandomString(size int) string {
 
 	out := make([]byte, 0, size)
-	for i := 0; i < size; i += 1 {
+	for i := 0; i < size; i++ {
 		out = append(out, _zfc[_zfcrand.Int()%_zfclen])
 	}
 	return string(out)
 }
 func createRandomClientid() string {
 
-	return ClientIdPre + createRandomString(10)
+	return clientIdPre + createRandomString(10)
 }
+
+//创建mqtt客户端
 func CreateClient(option MqttOption) (MqttClienter, error) {
 	client := &antClient{}
 	if option.Addr == "" {
@@ -44,7 +46,7 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 		return nil, errors.New("未设置mqtt连接格式错误")
 	}
 	client.addr = option.Addr
-	client.tls = option.Tls
+	client.tls = option.TLS
 	if option.ReconnTimeInterval > 0 {
 
 		client.reconnTimeInterval = time.Duration(option.ReconnTimeInterval) * time.Second
@@ -85,9 +87,12 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 	return client, nil
 }
 
+//mqtt连接配置
 type MqttOption struct {
+	//服务器ip端口
 	Addr string
-	Tls  *tls.Config
+	//TLS配置
+	TLS *tls.Config
 	//设置重连时间重连时间<=0不重连　单位秒
 	ReconnTimeInterval int
 	//客户端标志
@@ -130,10 +135,10 @@ type baseClientStatus struct {
 
 func (c *baseClientStatus) init() {
 	c.pubcnt = make(map[CntType]*pubCnt)
-	c.pubcnt[PubCnt_QoS0] = &pubCnt{}
-	c.pubcnt[PubCnt_QoS1] = &pubCnt{}
-	c.pubcnt[PubCnt_QoS2] = &pubCnt{}
-	c.pubcnt[PubCnt_TOTAL] = &pubCnt{}
+	c.pubcnt[PubCntQoS0] = &pubCnt{}
+	c.pubcnt[PubCntQoS1] = &pubCnt{}
+	c.pubcnt[PubCntQoS2] = &pubCnt{}
+	c.pubcnt[PubCntTOTAL] = &pubCnt{}
 }
 
 type antClient struct {
@@ -166,8 +171,6 @@ type antClient struct {
 	heartbeatCheckInterval time.Duration
 
 	connected bool
-
-	nextMqttPacketId int64
 
 	connlock      sync.Mutex
 	packetManager PacketManager

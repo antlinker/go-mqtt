@@ -31,24 +31,24 @@ type mqttListen struct {
 
 //注册连接监听
 func (cl *mqttListen) AddConnListener(listener MqttConnListener) {
-	cl.AddListener(EVENT_CONN, listener)
+	cl.AddListener(EventConn, listener)
 }
 
 //移除连接监听
 func (cl *mqttListen) RemoveConnListener(listener MqttConnListener) {
-	cl.RemoveListener(EVENT_CONN, listener)
+	cl.RemoveListener(EventConn, listener)
 }
 
 func (cl *mqttListen) fireOnConnStart(client MqttClienter) {
 	//Mlog.Debug("fireOnConnStart")
-	cl.FireListener(EVENT_CONN, "OnConnStart", createMqttConnEvent(client, STATUS_CONN_START, atomic.AddInt64(&cl.totalRecnt, 1), atomic.AddInt64(&cl.curRecnt, 1)))
+	cl.FireListener(EventConn, "OnConnStart", createMqttConnEvent(client, StatusConnStart, atomic.AddInt64(&cl.totalRecnt, 1), atomic.AddInt64(&cl.curRecnt, 1)))
 }
 func (cl *mqttListen) fireOnConnSuccess(client MqttClienter) {
 	cl.curRecnt = 0
-	cl.FireListener(EVENT_CONN, "OnConnSuccess", createMqttConnEvent(client, STATUS_CONN_SUCCESS, cl.curRecnt, cl.totalRecnt))
+	cl.FireListener(EventConn, "OnConnSuccess", createMqttConnEvent(client, StatusConnSuccess, cl.curRecnt, cl.totalRecnt))
 }
 func (cl *mqttListen) fireOnConnFailure(client MqttClienter, returncode int, err error) {
-	cl.FireListener(EVENT_CONN, "OnConnFailure", createMqttConnEvent(client, STATUS_CONN_FAILURE, cl.curRecnt, cl.totalRecnt), returncode, err)
+	cl.FireListener(EventConn, "OnConnFailure", createMqttConnEvent(client, StatusConnFailure, cl.curRecnt, cl.totalRecnt), returncode, err)
 }
 
 //发布消息事件监听
@@ -64,49 +64,49 @@ type MqttPubListener interface {
 
 //注册发布消息监听
 func (cl *mqttListen) AddPubListener(listener MqttPubListener) {
-	cl.AddListener(EVENT_BULISH, listener)
+	cl.AddListener(EventPublish, listener)
 }
 
 //移除发布消息监听
 func (cl *mqttListen) RemovePubListener(listener MqttPubListener) {
-	cl.RemoveListener(EVENT_BULISH, listener)
+	cl.RemoveListener(EventPublish, listener)
 }
 
 func (cl *mqttListen) fireOnPubReady(client MqttClienter, mpacket *MqttPacket) {
-	atomic.AddInt64(&(cl.pubcnt[PubCnt_TOTAL].send), 1)
+	atomic.AddInt64(&(cl.pubcnt[PubCntTOTAL].send), 1)
 	switch mpacket.Packet.(*packet.Publish).GetQos() {
 	case 0:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS0].send, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS0].send, 1)
 	case 1:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS1].send, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS1].send, 1)
 	case 2:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS2].send, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS2].send, 1)
 	}
-	cl.FireListener(EVENT_BULISH, "OnPubReady", createMqttPubEvent(client, PubStatus_Ready, cl.pubcnt), mpacket)
+	cl.FireListener(EventPublish, "OnPubReady", createMqttPubEvent(client, PubStatus_Ready, cl.pubcnt), mpacket)
 }
 func (cl *mqttListen) fireOnPubSuccess(client MqttClienter, mpacket *MqttPacket) {
-	atomic.AddInt64(&cl.pubcnt[PubCnt_TOTAL].success, 1)
+	atomic.AddInt64(&cl.pubcnt[PubCntTOTAL].success, 1)
 	switch mpacket.Packet.(*packet.Publish).GetQos() {
 	case 0:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS0].success, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS0].success, 1)
 	case 1:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS1].success, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS1].success, 1)
 	case 2:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS2].success, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS2].success, 1)
 	}
-	cl.FireListener(EVENT_BULISH, "OnPubSuccess", createMqttPubEvent(client, PubStatus_Success, cl.pubcnt), mpacket)
+	cl.FireListener(EventPublish, "OnPubSuccess", createMqttPubEvent(client, PubStatus_Success, cl.pubcnt), mpacket)
 }
 func (cl *mqttListen) fireOnPubFinal(client MqttClienter, mpacket *MqttPacket) {
-	atomic.AddInt64(&cl.pubcnt[PubCnt_TOTAL].final, 1)
+	atomic.AddInt64(&cl.pubcnt[PubCntTOTAL].final, 1)
 	switch mpacket.Packet.(*packet.Publish).GetQos() {
 	case 0:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS0].final, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS0].final, 1)
 	case 1:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS1].final, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS1].final, 1)
 	case 2:
-		atomic.AddInt64(&cl.pubcnt[PubCnt_QoS2].final, 1)
+		atomic.AddInt64(&cl.pubcnt[PubCntQoS2].final, 1)
 	}
-	cl.FireListener(EVENT_BULISH, "OnPubFinal", createMqttPubEvent(client, PubStatus_final, cl.pubcnt), mpacket)
+	cl.FireListener(EventPublish, "OnPubFinal", createMqttPubEvent(client, PubStatus_final, cl.pubcnt), mpacket)
 }
 
 //接收消息事件监听
@@ -118,18 +118,18 @@ type MqttRecvPubListener interface {
 
 //注册接收发布消息监听
 func (cl *mqttListen) AddRecvPubListener(listener MqttRecvPubListener) {
-	cl.AddListener(EVENT_RECVBULISH, listener)
+	cl.AddListener(EventRecvPub, listener)
 }
 
 //移除接收发布消息监听
 func (cl *mqttListen) RemoveRecvPubListener(listener MqttRecvPubListener) {
-	cl.RemoveListener(EVENT_RECVBULISH, listener)
+	cl.RemoveListener(EventRecvPub, listener)
 }
 
 func (cl *mqttListen) fireOnRecvPublish(client MqttClienter, topic string, payload []byte, qos QoS) {
 	recvPubCnt := atomic.AddInt64(&cl.recvPubCnt, 1)
 
-	cl.FireListener(EVENT_RECVBULISH, "OnRecvPublish", createMqttRecvPubEvent(client, recvPubCnt), topic, payload, qos)
+	cl.FireListener(EventRecvPub, "OnRecvPublish", createMqttRecvPubEvent(client, recvPubCnt), topic, payload, qos)
 }
 
 type MqttSubListener interface {
@@ -140,18 +140,18 @@ type MqttSubListener interface {
 
 //注册订阅消息监听
 func (cl *mqttListen) AddSubListener(listener MqttSubListener) {
-	cl.AddListener(EVENT_SUBSCRIBE, listener)
+	cl.AddListener(EventSubscribe, listener)
 }
 
 //移除订阅消息监听
 func (cl *mqttListen) RemoveSubListener(listener MqttSubListener) {
-	cl.RemoveListener(EVENT_SUBSCRIBE, listener)
+	cl.RemoveListener(EventSubscribe, listener)
 }
 func (cl *mqttListen) fireOnSubStart(client MqttClienter, sub []SubFilter) {
-	cl.FireListener(EVENT_SUBSCRIBE, "OnSubStart", createMqttEvent(client, EVENT_SUBSCRIBE), sub)
+	cl.FireListener(EventSubscribe, "OnSubStart", createMqttEvent(client, EventSubscribe), sub)
 }
 func (cl *mqttListen) fireOnSubSuccess(client MqttClienter, sub []SubFilter, result []QoS) {
-	cl.FireListener(EVENT_SUBSCRIBE, "OnSubSuccess", createMqttEvent(client, EVENT_SUBSCRIBE), sub, result)
+	cl.FireListener(EventSubscribe, "OnSubSuccess", createMqttEvent(client, EventSubscribe), sub, result)
 }
 
 type MqttUnSubListener interface {
@@ -162,19 +162,19 @@ type MqttUnSubListener interface {
 
 //注册取消订阅消息监听
 func (cl *mqttListen) AddUnSubListener(listener MqttUnSubListener) {
-	cl.AddListener(EVENT_UNSUBSCRIBE, listener)
+	cl.AddListener(EventUnSub, listener)
 }
 
 //移除取消订阅消息监听
 func (cl *mqttListen) RemoveUnSubListener(listener MqttUnSubListener) {
-	cl.RemoveListener(EVENT_UNSUBSCRIBE, listener)
+	cl.RemoveListener(EventUnSub, listener)
 }
 
 func (cl *mqttListen) fireOnUnSubStart(client MqttClienter, filter []string) {
-	cl.FireListener(EVENT_UNSUBSCRIBE, "OnUnSubStart", createMqttEvent(client, EVENT_UNSUBSCRIBE), filter)
+	cl.FireListener(EventUnSub, "OnUnSubStart", createMqttEvent(client, EventUnSub), filter)
 }
 func (cl *mqttListen) fireOnUnSubSuccess(client MqttClienter, filter []string) {
-	cl.FireListener(EVENT_UNSUBSCRIBE, "OnUnSubSuccess", createMqttEvent(client, EVENT_UNSUBSCRIBE), filter)
+	cl.FireListener(EventUnSub, "OnUnSubSuccess", createMqttEvent(client, EventUnSub), filter)
 }
 
 //发送接收报文接口
@@ -188,21 +188,21 @@ type MqttPacketListener interface {
 
 //注册取消订阅消息监听
 func (cl *mqttListen) AddPacketListener(listener MqttPacketListener) {
-	cl.AddListener(EVENT_PACKET, listener)
+	cl.AddListener(EventPacket, listener)
 }
 
 //移除取消订阅消息监听
 func (cl *mqttListen) RemovePacketListener(listener MqttPacketListener) {
-	cl.RemoveListener(EVENT_PACKET, listener)
+	cl.RemoveListener(EventPacket, listener)
 }
 
 func (cl *mqttListen) fireOnRecvPacket(client MqttClienter, packet packet.MessagePacket) {
 	recvPacketCnt := atomic.AddInt64(&cl.recvPacketCnt, 1)
-	cl.FireListener(EVENT_PACKET, "OnRecvPacket", createMqttEvent(client, EVENT_PACKET), packet, recvPacketCnt)
+	cl.FireListener(EventPacket, "OnRecvPacket", createMqttEvent(client, EventPacket), packet, recvPacketCnt)
 }
 func (cl *mqttListen) fireOnSendPacket(client MqttClienter, packet packet.MessagePacket, err error) {
 	sendPacketCnt := atomic.AddInt64(&cl.sendPacketCnt, 1)
-	cl.FireListener(EVENT_PACKET, "OnSendPacket", createMqttEvent(client, EVENT_PACKET), packet, sendPacketCnt, err)
+	cl.FireListener(EventPacket, "OnSendPacket", createMqttEvent(client, EventPacket), packet, sendPacketCnt, err)
 }
 
 type MqttDisConnListener interface {
@@ -214,22 +214,22 @@ type MqttDisConnListener interface {
 
 //注册取消订阅消息监听
 func (cl *mqttListen) AddDisConnListener(listener MqttDisConnListener) {
-	cl.AddListener(EVENT_DISCONNECT, listener)
+	cl.AddListener(EventDisconn, listener)
 }
 
 //移除取消订阅消息监听
 func (cl *mqttListen) RemoveDisConnListener(listener MqttDisConnListener) {
-	cl.RemoveListener(EVENT_DISCONNECT, listener)
+	cl.RemoveListener(EventDisconn, listener)
 }
 
 func (cl *mqttListen) fireOnDisconning(client MqttClienter) {
-	cl.FireListener(EVENT_DISCONNECT, "OnDisconning", createMqttEvent(client, EVENT_DISCONNECT))
+	cl.FireListener(EventDisconn, "OnDisconning", createMqttEvent(client, EventDisconn))
 }
 func (cl *mqttListen) fireOnDisconned(client MqttClienter) {
-	cl.FireListener(EVENT_DISCONNECT, "OnDisconned", createMqttEvent(client, EVENT_DISCONNECT))
+	cl.FireListener(EventDisconn, "OnDisconned", createMqttEvent(client, EventDisconn))
 }
 func (cl *mqttListen) fireOnLostConn(client MqttClienter, err error) {
-	cl.FireListener(EVENT_DISCONNECT, "OnLostConn", createMqttEvent(client, EVENT_DISCONNECT), err)
+	cl.FireListener(EventDisconn, "OnLostConn", createMqttEvent(client, EventDisconn), err)
 }
 
 type DefaultListener struct {
@@ -359,7 +359,7 @@ type DefaultPrintPubListen struct {
 }
 
 func (*DefaultPrintPubListen) OnPubReady(event *MqttPubEvent, mp *MqttPacket) {
-	Mlog.Debugf("OnPubReady:%v", event.GetSendCnt(PubCnt_TOTAL))
+	Mlog.Debugf("OnPubReady:%v", event.GetSendCnt(PubCntTOTAL))
 }
 func (*DefaultPrintPubListen) OnPubSuccess(event *MqttPubEvent, mp *MqttPacket) {
 	Mlog.Debugf("OnPubSuccess:%v", mp.Packet)

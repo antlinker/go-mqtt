@@ -32,16 +32,23 @@ package client
 
 
 **/
-
+//服务质量
 type QoS uint8
 
 const (
+	//服务质量0
 	QoS0 QoS = iota
+	//服务质量1
 	QoS1
+	//服务质量2
 	QoS2
+	//服务器返回拒绝订阅
 	Refused = 0x80
 )
 
+//创建订阅对象
+//filter　订阅规则
+//qos 服务质量
 func CreateSubFilter(filter string, qos QoS) SubFilter {
 	return SubFilter{
 		filter: filter,
@@ -49,6 +56,7 @@ func CreateSubFilter(filter string, qos QoS) SubFilter {
 	}
 }
 
+//订阅结构体
 type SubFilter struct {
 	filter string
 	qos    QoS
