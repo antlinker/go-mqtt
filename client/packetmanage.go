@@ -41,10 +41,8 @@ type sendQos2Unfinaler interface {
 }
 
 type receiveQos2 interface {
-	//qos2存储id
+	//qos2存储id,重复id只保留一个
 	AddReceivePacket(*MqttPacket)
-	//检测qos2
-	ExistsReveivePacket(id uint16) bool
 	RemoveReceivePacket(id uint16) *MqttPacket
 }
 

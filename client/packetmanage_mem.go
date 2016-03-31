@@ -277,11 +277,6 @@ func (m *memReceiveQos2) AddReceivePacket(mp *MqttPacket) {
 
 }
 
-//检测qos2
-func (m *memReceiveQos2) ExistsReveivePacket(id uint16) bool {
-	r, _ := m.recvQsos2Map.Contains(id)
-	return r
-}
 func (m *memReceiveQos2) RemoveReceivePacket(id uint16) *MqttPacket {
 	e, _ := m.recvQsos2Map.Remove(id)
 	if e != nil {
