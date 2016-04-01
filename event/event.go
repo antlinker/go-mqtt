@@ -12,61 +12,8 @@ import (
 	"github.com/antlinker/taskpool"
 )
 
-//var triggerEventChan = make(chan *TriggerEvent, 1024)
-
-//func init() {
-
-//	//启动事件主go程
-//	go func(triggerEventChan <-chan *TriggerEvent) {
-//		for {
-//			select {
-//			case triggerEvent := <-triggerEventChan:
-//				//	Mlog.Debug( "收到触发事件:%v", triggerEvent)
-//				if triggerEvent == nil {
-//					Mlog.Warn( "事件调度线程退出")
-//					return
-//				}
-//				go doTriggerEvent(triggerEvent)
-
-//			}
-
-//		}
-//	}(triggerEventChan)
-//}
-// func doTriggerEvent(triggerEvent *TriggerEvent) {
-// 	defer func() {
-// 		if err := recover(); err != nil {
-// 			fmt.Println("======:", triggerEvent.method, err)
-// 		}
-// 	}()
-// 	m := triggerEvent.listener.MethodByName(triggerEvent.method)
-// 	in := triggerEvent.param
-// 	mtype := m.Type()
-// 	pcnt := mtype.NumIn()
-
-// 	values := make([]reflect.Value, pcnt)
-// 	values[0] = reflect.ValueOf(triggerEvent.event)
-// 	if pcnt > 0 {
-// 		for i := 1; i < pcnt; i++ {
-// 			v := in[i-1]
-// 			if v != nil {
-
-// 				values[i] = reflect.ValueOf(in[i-1])
-// 			} else {
-// 				values[i] = reflect.Zero(mtype.In(i))
-
-// 			}
-// 		}
-// 	}
-
-// 	fmt.Println(triggerEvent.method, m.Type())
-// 	fmt.Println("values:", len(values), values)
-// 	fmt.Println("in:", len(in), in)
-// 	m.Call(values)
-
-// }
-func createRegListen(listener Listener) *RegListen {
-	return &RegListen{
+func createRegListen(listener Listener) *regListen {
+	return &regListen{
 		listener: listener,
 		value:    reflect.ValueOf(listener),
 		methods:  cmap.NewConcurrencyMap(),
@@ -81,13 +28,14 @@ type rmethod struct {
 	innum    int
 	value    reflect.Value
 }
-type RegListen struct {
+
+type regListen struct {
 	listener Listener
 	value    reflect.Value
 	methods  cmap.ConcurrencyMap
 }
 
-func (l *RegListen) exec(event Event, method string, param []interface{}) {
+func (l *regListen) exec(event Event, method string, param []interface{}) {
 	var (
 		rm          *rmethod
 		inum        int
@@ -136,6 +84,7 @@ func (l *RegListen) exec(event Event, method string, param []interface{}) {
 
 }
 
+// Event 事件接口
 type Event interface {
 
 	//事件类型
@@ -144,38 +93,46 @@ type Event interface {
 	GetTarget() interface{}
 }
 
+// BaseEvent 事件基础实现
 type BaseEvent struct {
 	etype  int
 	target interface{}
 }
 
+// Init 初始化事件
+// etype 事件类型
+// target 触发对象
 func (be *BaseEvent) Init(etype int, target interface{}) {
 	be.etype = etype
 	be.target = target
 }
+
+// GetType 获取事件类型
 func (be *BaseEvent) GetType() int {
 	return be.etype
 }
+
+// GetTarget 获取触发对象
 func (be *BaseEvent) GetTarget() interface{} {
 	return be.target
 }
 
-type TriggerEvent struct {
+type triggerEvent struct {
 	taskpool.BaseTask
 	event    Event
-	listener *RegListen
+	listener *regListen
 	method   string
 	param    []interface{}
 }
 
 var triggerEventPool = sync.Pool{
 	New: func() interface{} {
-		return &TriggerEvent{}
+		return &triggerEvent{}
 	},
 }
 
-func createTriggerEvent(method string, event Event, listener *RegListen, param []interface{}) *TriggerEvent {
-	e := triggerEventPool.Get().(*TriggerEvent)
+func createTriggerEvent(method string, event Event, listener *regListen, param []interface{}) *triggerEvent {
+	e := triggerEventPool.Get().(*triggerEvent)
 	e.event = event
 	e.listener = listener
 	e.method = method
@@ -183,16 +140,17 @@ func createTriggerEvent(method string, event Event, listener *RegListen, param [
 	return e
 }
 
+// Listener 监听接口
 type Listener interface {
 }
 
-type EventTaskExecor struct {
+type eventTaskExecor struct {
 }
 
-func (e *EventTaskExecor) ExecTask(task taskpool.Task) error {
-	even, ok := task.(*TriggerEvent)
+func (e *eventTaskExecor) ExecTask(task taskpool.Task) error {
+	even, ok := task.(*triggerEvent)
 	if !ok {
-		return fmt.Errorf("错误的任务:不是一个事件任务.", task)
+		return fmt.Errorf("错误的任务:%v", task)
 	}
 	even.listener.exec(even.event, even.method, even.param)
 	//doTriggerEvent(even)
@@ -200,11 +158,11 @@ func (e *EventTaskExecor) ExecTask(task taskpool.Task) error {
 	return nil
 }
 
-var eventTaskExecor taskpool.AsyncTaskOperater
+var eventTaskOperate taskpool.AsyncTaskOperater
 
 func getEventTaskExecor() taskpool.AsyncTaskOperater {
-	if eventTaskExecor == nil {
-		eventTaskExecor = taskpool.CreateAsyncTaskOperater("事件任务", &EventTaskExecor{}, &taskpool.AsyncTaskOption{
+	if eventTaskOperate == nil {
+		eventTaskOperate = taskpool.CreateAsyncTaskOperater("事件任务", &eventTaskExecor{}, &taskpool.AsyncTaskOption{
 			AsyncMaxWaitTaskNum: 1024,
 			//最大异步任务go程数量
 			MaxAsyncPoolNum: 1024,
@@ -215,18 +173,18 @@ func getEventTaskExecor() taskpool.AsyncTaskOperater {
 			AsyncTaskMaxFaildedNum: 1,
 		})
 	}
-	return eventTaskExecor
+	return eventTaskOperate
 }
 
 //监听组 该组是线程不安全的
-type ListenerGroup struct {
+type listenerGroup struct {
 	listenerList      *list.List
 	listenerMap       map[Listener]*list.Element
 	asyncTaskOperater taskpool.AsyncTaskOperater
 }
 
-func CreateListenerGroup() *ListenerGroup {
-	group := &ListenerGroup{}
+func createListenerGroup() *listenerGroup {
+	group := &listenerGroup{}
 	group.listenerList = list.New()
 	group.listenerMap = make(map[Listener]*list.Element, 2)
 	group.asyncTaskOperater = getEventTaskExecor()
@@ -234,7 +192,7 @@ func CreateListenerGroup() *ListenerGroup {
 }
 
 //向组内增加监听
-func (l *ListenerGroup) AddListener(listener Listener) {
+func (l *listenerGroup) AddListener(listener Listener) {
 	if l.listenerList == nil {
 		l.listenerList = list.New()
 		l.listenerMap = make(map[Listener]*list.Element, 2)
@@ -249,7 +207,7 @@ func (l *ListenerGroup) AddListener(listener Listener) {
 }
 
 //从组内移除监听
-func (l *ListenerGroup) RemoveListener(listener Listener) {
+func (l *listenerGroup) RemoveListener(listener Listener) {
 	elem, ok := l.checkElement(listener)
 	if ok {
 		l.listenerList.Remove(elem)
@@ -257,10 +215,10 @@ func (l *ListenerGroup) RemoveListener(listener Listener) {
 	}
 }
 
-//触发监听事件
-func (l *ListenerGroup) FireListener(method string, event Event, param []interface{}) {
+//FireListener 触发监听事件
+func (l *listenerGroup) FireListener(method string, event Event, param []interface{}) {
 	for elem := l.listenerList.Front(); elem != nil; elem = elem.Next() {
-		listener := elem.Value.(*RegListen)
+		listener := elem.Value.(*regListen)
 		l.asyncTaskOperater.ExecAsyncTask(createTriggerEvent(method, event, listener, param))
 
 	}
@@ -268,7 +226,7 @@ func (l *ListenerGroup) FireListener(method string, event Event, param []interfa
 }
 
 //检测组内是否有该监听
-func (l *ListenerGroup) checkElement(listener Listener) (*list.Element, bool) {
+func (l *listenerGroup) checkElement(listener Listener) (*list.Element, bool) {
 	if l.listenerMap == nil {
 		return nil, false
 	}
@@ -277,21 +235,26 @@ func (l *ListenerGroup) checkElement(listener Listener) (*list.Element, bool) {
 
 }
 
-//事件发生器 线程安全的
-type EventGenerator struct {
+// Generator 事件发生器 线程安全的
+type Generator struct {
 	sync.Mutex
-	listenergroupMap map[int]*ListenerGroup
+	listenergroupMap map[int]*listenerGroup
 }
 
-//增加一个监听器
-func (eg *EventGenerator) AddListener(eventtype int, listener Listener) {
+// AddListener 增加一个监听器
+// eventtype 事件类型
+// listener 监听器
+func (eg *Generator) AddListener(eventtype int, listener Listener) {
 	eg.Lock()
 	defer eg.Unlock()
 	listenerGroup := eg.tryInit(eventtype)
 	listenerGroup.AddListener(listener)
 }
 
-func (eg *EventGenerator) RemoveListener(eventtype int, listener Listener) {
+// RemoveListener 移除一个监听
+// eventtype 事件类型
+// listener 监听器
+func (eg *Generator) RemoveListener(eventtype int, listener Listener) {
 	eg.Lock()
 	defer eg.Unlock()
 	if eg.listenergroupMap == nil {
@@ -303,7 +266,13 @@ func (eg *EventGenerator) RemoveListener(eventtype int, listener Listener) {
 	}
 	listenerGroup.RemoveListener(listener)
 }
-func (eg *EventGenerator) FireListener(eventtype int, method string, event Event, param ...interface{}) {
+
+// FireListener 触发事件
+// eventtype 事件类型
+// method 触发的方法
+// event 事件
+// param 事件自定义参数
+func (eg *Generator) FireListener(eventtype int, method string, event Event, param ...interface{}) {
 	//eg.Lock()
 	//defer eg.Unlock()
 	lg, ok := eg.listenergroupMap[eventtype]
@@ -314,11 +283,11 @@ func (eg *EventGenerator) FireListener(eventtype int, method string, event Event
 }
 
 //尝试初始化,如果已经初始化不在初始化
-func (eg *EventGenerator) tryInit(eventtype int) *ListenerGroup {
+func (eg *Generator) tryInit(eventtype int) *listenerGroup {
 	if eg.listenergroupMap == nil {
 
-		eg.listenergroupMap = make(map[int]*ListenerGroup)
-		lg := CreateListenerGroup()
+		eg.listenergroupMap = make(map[int]*listenerGroup)
+		lg := createListenerGroup()
 		eg.listenergroupMap[eventtype] = lg
 		return lg
 
@@ -326,7 +295,7 @@ func (eg *EventGenerator) tryInit(eventtype int) *ListenerGroup {
 	listenerGroup, ok := eg.listenergroupMap[eventtype]
 	if !ok {
 
-		listenerGroup = CreateListenerGroup()
+		listenerGroup = createListenerGroup()
 		eg.listenergroupMap[eventtype] = listenerGroup
 
 	}

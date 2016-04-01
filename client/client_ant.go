@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	clientIdPre = "antMqtt_"
+	// clientIDPre 随机客户端标志前缀
+	clientIDPre = "antMqtt_"
 )
 
 var _zfc = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -32,10 +33,10 @@ func createRandomString(size int) string {
 }
 func createRandomClientid() string {
 
-	return clientIdPre + createRandomString(10)
+	return clientIDPre + createRandomString(10)
 }
 
-//创建mqtt客户端
+// CreateClient 创建mqtt客户端
 func CreateClient(option MqttOption) (MqttClienter, error) {
 	client := &antClient{}
 	if option.Addr == "" {
@@ -87,7 +88,7 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 	return client, nil
 }
 
-//mqtt连接配置
+// MqttOption mqtt连接配置
 type MqttOption struct {
 	//服务器ip端口
 	Addr string
@@ -309,7 +310,7 @@ func (c *antClient) UnSubscribes(filters ...string) (*MqttPacket, error) {
 	return c.addPacket(unsub)
 }
 func (c *antClient) addPacket(msg packet.PacketIdMessage) (*MqttPacket, MqttError) {
-	mp := CreateMqttPacket(Direct_Send, msg)
+	mp := CreateMqttPacket(DirectSend, msg)
 
 	err := c.packetManager.AddSendPacket(mp)
 	return mp, err

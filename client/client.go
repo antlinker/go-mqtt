@@ -1,54 +1,22 @@
 package client
 
-/**
-存储重发队列
-连接参数
-订阅发布
-取消订阅
-消息发布
-重连
-
-事件机制
-
-	连接开始
-	连接成功
-	连接失败
-
-	正常断开连接
-	异常断开连接
-
-	发布消息准备成功
-	发布消息成功
-	发布消息完成
-
-	收到消息
-
-
-	发出订阅
-	订阅返回
-
-	发去取消订阅
-	取消订阅返回
-
-
-**/
-//服务质量
+// QoS 服务质量
 type QoS uint8
 
 const (
-	//服务质量0
+	// QoS0 服务质量0
 	QoS0 QoS = iota
-	//服务质量1
+	// QoS1 服务质量1
 	QoS1
-	//服务质量2
+	// QoS2 服务质量2
 	QoS2
-	//服务器返回拒绝订阅
+	// Refused 服务器返回拒绝订阅
 	Refused = 0x80
 )
 
-//创建订阅对象
-//filter　订阅规则
-//qos 服务质量
+// CreateSubFilter 创建订阅对象
+// filter　订阅规则
+// qos 服务质量
 func CreateSubFilter(filter string, qos QoS) SubFilter {
 	return SubFilter{
 		filter: filter,
@@ -56,13 +24,13 @@ func CreateSubFilter(filter string, qos QoS) SubFilter {
 	}
 }
 
-//订阅结构体
+// SubFilter 订阅结构体
 type SubFilter struct {
 	filter string
 	qos    QoS
 }
 
-//MQTT客户端
+// MqttClienter MQTT客户端
 type MqttClienter interface {
 	MqttConner
 	MqttPublisher
@@ -72,7 +40,7 @@ type MqttClienter interface {
 	MqttDisConner
 }
 
-//MQTT连接器
+// MqttConner MQTT连接器
 type MqttConner interface {
 	//开始连接
 	Connect() error
@@ -84,7 +52,7 @@ type MqttConner interface {
 	RemoveConnListener(listener MqttConnListener)
 }
 
-//MQTT消息发布消息接收
+// MqttPublisher MQTT消息发布消息接收
 type MqttPublisher interface {
 	//发布消息
 	Publish(topic string, qos QoS, retain bool, payload interface{}) (*MqttPacket, error)
@@ -99,7 +67,7 @@ type MqttPublisher interface {
 	RemoveRecvPubListener(listener MqttRecvPubListener)
 }
 
-//MQTT订阅
+// MqttSubscriber MQTT订阅
 type MqttSubscriber interface {
 	//订阅
 	Subscribe(filter string, qos QoS) (*MqttPacket, error)
@@ -109,7 +77,7 @@ type MqttSubscriber interface {
 	RemoveSubListener(listener MqttSubListener)
 }
 
-//MQTT取消订阅
+// MqttUnSubscriber MQTT取消订阅
 type MqttUnSubscriber interface {
 	//取消订阅
 	UnSubscribe(filter string) (*MqttPacket, error)
@@ -119,7 +87,7 @@ type MqttUnSubscriber interface {
 	RemoveUnSubListener(listener MqttUnSubListener)
 }
 
-//MQTT报文发送接收
+// MqttPackerListener MQTT报文发送接收
 type MqttPackerListener interface {
 	//增加报文接收发送监听
 	AddPacketListener(listener MqttPacketListener)
@@ -127,7 +95,7 @@ type MqttPackerListener interface {
 	RemovePacketListener(listener MqttPacketListener)
 }
 
-//MQTT连接断开
+// MqttDisConner MQTT连接断开
 type MqttDisConner interface {
 	//断开连接
 	Disconnect()

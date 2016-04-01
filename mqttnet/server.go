@@ -13,12 +13,16 @@ import (
 )
 
 const (
-	LOGTAG = "mqttSrvConn"
+	// LogTag 日志标签
+	LogTag = "mqttSrvConn"
 )
 
+// ServerOption 服务
 type ServerOption struct {
 	MaxConnNum int
 }
+
+// Server 服务实现
 type Server struct {
 	listeners []*mqttlistener
 	option    ServerOption
@@ -27,6 +31,7 @@ type Server struct {
 	lock      sync.Mutex
 }
 
+// Create 创建服务
 func Create(option *ServerOption) *Server {
 	return &Server{listeners: make([]*mqttlistener, 0),
 		option: *option,
@@ -34,6 +39,7 @@ func Create(option *ServerOption) *Server {
 	}
 }
 
+// AddWebSocket 增加webscoket监听
 func (s *Server) AddWebSocket(network string, laddr string, url string, tlsconfig *tls.Config) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -42,17 +48,22 @@ func (s *Server) AddWebSocket(network string, laddr string, url string, tlsconfi
 
 }
 
-func (s *Server) AddTls(network string, laddr string, tlsconfig *tls.Config) {
+// AddTLS 增加tcp/tls监听
+func (s *Server) AddTLS(network string, laddr string, tlsconfig *tls.Config) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr, tlsconfig: tlsconfig})
 
 }
+
+// Add 增加tcp监听
 func (s *Server) Add(network string, laddr string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr})
 }
+
+// Start 开始服务
 func (s *Server) Start() (connchan chan MQTTConner, err error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -65,14 +76,16 @@ func (s *Server) Start() (connchan chan MQTTConner, err error) {
 	for _, mlistener := range s.listeners {
 		err = mlistener.listen(s.connchan)
 		if err != nil {
-			alog.ErrorTf(LOGTAG, "启动网络服务:%s %s 失败:%v", mlistener.network, mlistener.laddr, err)
+			alog.ErrorTf(LogTag, "启动网络服务:%s %s 失败:%v", mlistener.network, mlistener.laddr, err)
 			os.Exit(-1)
 		}
 	}
 	s.runing = true
-	alog.DebugTf(LOGTAG, "mqtt网络服务启动成功")
+	alog.DebugTf(LogTag, "mqtt网络服务启动成功")
 	return
 }
+
+// Stop 停止服务
 func (s *Server) Stop() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -114,13 +127,13 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 	l.closewait.Add(1)
 	go func() {
 		defer func() {
-			alog.DebugTf(LOGTAG, l.network, ":", l.laddr, ":监听关闭退出")
+			alog.DebugTf(LogTag, l.network, ":", l.laddr, ":监听关闭退出")
 			l.closewait.Done()
 		}()
 		for {
-			//alog.DebugTf(LOGTAG,"等待客户端连入", l.laddr)
+			//alog.DebugTf(LogTag,"等待客户端连入", l.laddr)
 			//fmt.Println("等待客户端连入", l.laddr)
-			alog.DebugTf(LOGTAG, l.network, ":监听 ", l.laddr, "成功")
+			alog.DebugTf(LogTag, l.network, ":监听 ", l.laddr, "成功")
 			conn, e := l.listener.Accept()
 			if e != nil {
 				if l.closeing {
@@ -130,7 +143,7 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 				alog.Error(l.network, ":", l.laddr, ":", "错误连接:", e)
 				break
 			}
-			alog.DebugTf(LOGTAG, l.laddr, "连入", conn.RemoteAddr(), "客户端")
+			alog.DebugTf(LogTag, l.laddr, "连入", conn.RemoteAddr(), "客户端")
 
 			//fmt.Println(l.laddr, "连入", conn.RemoteAddr(), "客户端")
 			connchan <- NewMqttConn(conn)
@@ -151,23 +164,23 @@ func (l *mqttlistener) listenws(connchan chan MQTTConner) (err error) {
 	appServeMux := http.NewServeMux()
 
 	appServeMux.Handle(l.ws.url, websocket.Handler(func(conn *websocket.Conn) {
-		alog.DebugTf(LOGTAG, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端", conn.IsClientConn(), conn.IsServerConn())
+		alog.DebugTf(LogTag, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端", conn.IsClientConn(), conn.IsServerConn())
 		// conn.Write([]byte("mqtt"))
 
-		alog.DebugTf(LOGTAG, "连接状态：", conn.IsClientConn(), conn.IsServerConn())
+		alog.DebugTf(LogTag, "连接状态：", conn.IsClientConn(), conn.IsServerConn())
 
 		// for !conn.IsClientConn() || !conn.IsServerConn() {
-		// 	alog.DebugTf(LOGTAG,"连接状态：", conn.IsClientConn(), conn.IsServerConn())
+		// 	alog.DebugTf(LogTag,"连接状态：", conn.IsClientConn(), conn.IsServerConn())
 		// 	time.Sleep(10 * time.Microsecond)
 		// }
 		wsmqttconn := NewWsMqttConn(conn)
 		connchan <- wsmqttconn
 		wsmqttconn.startCopy()
-		alog.DebugTf(LOGTAG, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端，转发完成")
+		alog.DebugTf(LogTag, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端，转发完成")
 	}))
 	//appServeMux.Handle(l.ws.url, wsserver)
 	go http.Serve(l.listener, appServeMux)
-	alog.DebugTf(LOGTAG, l.network, ":监听 ", l.laddr, "成功")
+	alog.DebugTf(LogTag, l.network, ":监听 ", l.laddr, "成功")
 	return nil
 }
 func (l *mqttlistener) close() {

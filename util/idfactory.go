@@ -4,12 +4,14 @@ import (
 	"sync"
 )
 
+// PacketIdFactory 报文标识生产工厂
 type PacketIdFactory struct {
 	sync.Mutex
 	cur   uint16
 	idmap map[uint16]bool
 }
 
+// NewPacketIdFactory 创建报文标识生产工厂
 func NewPacketIdFactory() *PacketIdFactory {
 	return &PacketIdFactory{cur: 0, idmap: make(map[uint16]bool)}
 }

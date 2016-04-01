@@ -5,17 +5,22 @@ import (
 )
 
 const (
-	LOG_MQTT_TAG = "MQTTClient"
+	// LogMqttTag 日志标签
+	LogMqttTag = "MQTTClient"
 )
 
-var Mlog *alog.ALog = alog.NewALog()
+var (
+	// Mlog 日志
+	Mlog = alog.NewALog()
+)
 
 func init() {
-	Mlog.SetLogTag(LOG_MQTT_TAG)
+	Mlog.SetLogTag(LogMqttTag)
 	//Mlog.SetEnabled(false)
 }
 
+// MlogInit 初始化日志配置
 func MlogInit(configs string) {
 	Mlog.ReloadConfig(configs)
-	Mlog.SetLogTag(LOG_MQTT_TAG)
+	Mlog.SetLogTag(LogMqttTag)
 }

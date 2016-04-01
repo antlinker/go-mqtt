@@ -14,12 +14,14 @@ import (
 	"github.com/antlinker/go-mqtt/packet"
 )
 
+// NewWsMqttConn 创建webscoket连接
 func NewWsMqttConn(conn *websocket.Conn) *MqttWsConn {
 	mqttconn := &MqttWsConn{}
 	mqttconn.Init(conn)
 	return mqttconn
 }
 
+// MqttWsConn websocket连接
 type MqttWsConn struct {
 	sendwait   sync.WaitGroup
 	conn       *websocket.Conn
@@ -49,6 +51,8 @@ func (c *MqttWsConn) Write(b []byte) (n int, err error) {
 	n = len(b)
 	return
 }
+
+// Close 关闭连接
 func (c *MqttWsConn) Close() error {
 	c.closeclock.Lock()
 	defer c.closeclock.Unlock()
@@ -89,10 +93,12 @@ func (c *MqttWsConn) startCopy() {
 
 	}
 }
+
+// Init 初始化连接
 func (c *MqttWsConn) Init(conn net.Conn) {
 	wsconn, ok := conn.(*websocket.Conn)
 	if !ok {
-		alog.DebugTf(LOGTAG, "连接类型错误")
+		alog.DebugTf(LogTag, "连接类型错误")
 		return
 	}
 	c.closing = false
@@ -100,36 +106,45 @@ func (c *MqttWsConn) Init(conn net.Conn) {
 	c.in, c.writein = io.Pipe()
 
 }
+
+// LocalAddr 本地地址
 func (c *MqttWsConn) LocalAddr() net.Addr {
 	return c.conn.LocalAddr()
 }
+
+// RemoteAddr 远程地址
 func (c *MqttWsConn) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
+// SetDeadline 设置超时截止事件
 func (c *MqttWsConn) SetDeadline(t time.Time) error {
 	return c.conn.SetDeadline(t)
 }
+
+// SetReadTimeout 设置读取超时间隔时间
 func (c *MqttWsConn) SetReadTimeout(readtimeout time.Duration) {
 	c.readtimeout = readtimeout
 }
 
-//设置读取超时截止时间
+// SetReadDeadline 设置读取超时截止时间
 func (c *MqttWsConn) SetReadDeadline(t time.Time) error {
 	return c.conn.SetReadDeadline(t)
 }
+
+// SetWriteDeadline 设置写入超时截止时间
 func (c *MqttWsConn) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
 }
 
-//读取消息
+// ReadMessage 读取消息
 func (c *MqttWsConn) ReadMessage() (msg packet.MessagePacket, err error) {
 
 	return readMessage(c)
 
 }
 
-//发送消息
+// SendMessage 发送消息
 func (c *MqttWsConn) SendMessage(msg packet.MessagePacket) error {
 	if c.closing {
 		return errors.New(c.conn.RemoteAddr().String() + "连接关闭中不能继续发送")
@@ -154,9 +169,13 @@ func (c *MqttWsConn) SendMessage(msg packet.MessagePacket) error {
 	//c.bufferWrite.Flush()
 	return nil
 }
+
+// WaitSendEnd 等待发送结束
 func (c *MqttWsConn) WaitSendEnd() {
 	c.sendwait.Wait()
 }
+
+// GetConn 获取原始连接
 func (c *MqttWsConn) GetConn() net.Conn {
 	return c.conn
 }

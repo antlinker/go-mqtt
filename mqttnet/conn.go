@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// MQTTConner mqtt连接接口
 type MQTTConner interface {
 	net.Conn
 
@@ -28,6 +29,11 @@ type MQTTConner interface {
 	SendMessage(msg packet.MessagePacket) error
 }
 
+// Dial mqtt客户端连接
+//network 网络协议
+// address 网址
+// tlsconfig TLS配置
+// connectPacket 连接报文,只能设置一个或者不设置
 func Dial(network, address string, tlsconfig *tls.Config, connectPacket ...*packet.Connect) (conner MQTTConner, merr *MqttError) {
 	var conn net.Conn
 	var err error
@@ -40,14 +46,14 @@ func Dial(network, address string, tlsconfig *tls.Config, connectPacket ...*pack
 		//tls
 		conn, err = tls.Dial(network, address, tlsconfig)
 		if err != nil {
-			merr = createMqttError(ERR_CODE_NET, err.Error())
+			merr = createMqttError(ErrCodeNet, err.Error())
 			return
 		}
 	} else {
 		//net
 		conn, err = net.Dial(network, address)
 		if err != nil {
-			merr = createMqttError(ERR_CODE_NET, err.Error())
+			merr = createMqttError(ErrCodeNet, err.Error())
 			return
 		}
 	}
@@ -58,19 +64,19 @@ func Dial(network, address string, tlsconfig *tls.Config, connectPacket ...*pack
 	}
 	err = conner.SendMessage(connectPacket[0])
 	if err != nil {
-		err = createMqttError(ERR_CODE_NET, err.Error())
+		err = createMqttError(ErrCodeNet, err.Error())
 		return
 	}
 	var msg packet.MessagePacket
 	msg, err = conner.ReadMessage()
 	if err != nil {
-		merr = createMqttError(ERR_CODE_NET, err.Error())
+		merr = createMqttError(ErrCodeNet, err.Error())
 		return
 	}
 	connbak, ok := msg.(*packet.Connbak)
 	if !ok {
 
-		merr = createMqttError(ERR_MSGPACKET, msg.String())
+		merr = createMqttError(ErrMsgPacket, msg.String())
 		conn.Close()
 		return
 	}
@@ -85,12 +91,14 @@ func Dial(network, address string, tlsconfig *tls.Config, connectPacket ...*pack
 
 }
 
+// NewMqttConn 新建mqtt连接
 func NewMqttConn(conn net.Conn) MQTTConner {
 	mqttconn := &MQTTConn{}
 	mqttconn.Init(conn)
 	return mqttconn
 }
 
+// MQTTConn mqtt连接实现
 type MQTTConn struct {
 	sendwait     sync.WaitGroup
 	conn         net.Conn
@@ -121,6 +129,8 @@ func (c *MQTTConn) Write(b []byte) (n int, err error) {
 	}
 	return
 }
+
+// Close 关闭连接
 func (c *MQTTConn) Close() error {
 	c.closeclock.Lock()
 	defer c.closeclock.Unlock()
@@ -132,42 +142,53 @@ func (c *MQTTConn) Close() error {
 	return c.conn.Close()
 
 }
+
+// Init 初始化连接
 func (c *MQTTConn) Init(conn net.Conn) {
 	c.closing = false
 	c.conn = conn
 	//c.bufferReader = bufio.NewReaderSize(conn, 1024*1024*4)
 
 }
+
+// LocalAddr 获取本地地址
 func (c *MQTTConn) LocalAddr() net.Addr {
 	return c.conn.LocalAddr()
 }
+
+// RemoteAddr 获取远程地址
 func (c *MQTTConn) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
+// SetDeadline 设置超时截止时间
 func (c *MQTTConn) SetDeadline(t time.Time) error {
 	return c.conn.SetDeadline(t)
 }
+
+// SetReadTimeout 设置超时到期时间
 func (c *MQTTConn) SetReadTimeout(readtimeout time.Duration) {
 	c.readtimeout = readtimeout
 }
 
-//设置读取超时截止时间
+// SetReadDeadline 设置读取超时截止时间
 func (c *MQTTConn) SetReadDeadline(t time.Time) error {
 	return c.conn.SetReadDeadline(t)
 }
+
+// SetWriteDeadline 设置写入超时截止时间
 func (c *MQTTConn) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
 }
 
-//读取消息
+// ReadMessage 读取消息
 func (c *MQTTConn) ReadMessage() (msg packet.MessagePacket, err error) {
 
 	return readMessage(c)
 
 }
 
-//发送消息
+// SendMessage 发送消息
 func (c *MQTTConn) SendMessage(msg packet.MessagePacket) error {
 	if c.closing {
 		return errors.New(c.conn.RemoteAddr().String() + "连接关闭中不能继续发送")
@@ -191,9 +212,13 @@ func (c *MQTTConn) SendMessage(msg packet.MessagePacket) error {
 	//c.bufferWrite.Flush()
 	return nil
 }
+
+// WaitSendEnd 等待发送完成
 func (c *MQTTConn) WaitSendEnd() {
 	c.sendwait.Wait()
 }
+
+// GetConn 获取原始的连接
 func (c *MQTTConn) GetConn() net.Conn {
 	return c.conn
 }
@@ -208,9 +233,9 @@ func readMessage(conn io.Reader) (packet.MessagePacket, error) {
 		buf []byte
 
 		// tmp buffer to read a single byte
-		b []byte = make([]byte, 1)
+		b = make([]byte, 1)
 		// total bytes read
-		l int = 0
+		l = 0
 	)
 	var recivetime time.Time
 	//alog.Debug("++++++++++++Read message: %v", reflect.TypeOf(conn))

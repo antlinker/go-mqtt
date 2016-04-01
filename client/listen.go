@@ -13,7 +13,7 @@ type pubCnt struct {
 	final   int64
 }
 
-//连接事件
+// MqttConnListener 连接事件
 type MqttConnListener interface {
 	event.Listener
 	//开始建立连接
@@ -25,7 +25,7 @@ type MqttConnListener interface {
 }
 
 type mqttListen struct {
-	event.EventGenerator
+	event.Generator
 	baseClientStatus
 }
 
@@ -51,7 +51,7 @@ func (cl *mqttListen) fireOnConnFailure(client MqttClienter, returncode int, err
 	cl.FireListener(EventConn, "OnConnFailure", createMqttConnEvent(client, StatusConnFailure, cl.curRecnt, cl.totalRecnt), returncode, err)
 }
 
-//发布消息事件监听
+// MqttPubListener 发布消息事件监听
 type MqttPubListener interface {
 	event.Listener
 	//准备发送消息
@@ -82,7 +82,7 @@ func (cl *mqttListen) fireOnPubReady(client MqttClienter, mpacket *MqttPacket) {
 	case 2:
 		atomic.AddInt64(&cl.pubcnt[PubCntQoS2].send, 1)
 	}
-	cl.FireListener(EventPublish, "OnPubReady", createMqttPubEvent(client, PubStatus_Ready, cl.pubcnt), mpacket)
+	cl.FireListener(EventPublish, "OnPubReady", createMqttPubEvent(client, PubStatusReady, cl.pubcnt), mpacket)
 }
 func (cl *mqttListen) fireOnPubSuccess(client MqttClienter, mpacket *MqttPacket) {
 	atomic.AddInt64(&cl.pubcnt[PubCntTOTAL].success, 1)
@@ -94,7 +94,7 @@ func (cl *mqttListen) fireOnPubSuccess(client MqttClienter, mpacket *MqttPacket)
 	case 2:
 		atomic.AddInt64(&cl.pubcnt[PubCntQoS2].success, 1)
 	}
-	cl.FireListener(EventPublish, "OnPubSuccess", createMqttPubEvent(client, PubStatus_Success, cl.pubcnt), mpacket)
+	cl.FireListener(EventPublish, "OnPubSuccess", createMqttPubEvent(client, PubStatusSuccess, cl.pubcnt), mpacket)
 }
 func (cl *mqttListen) fireOnPubFinal(client MqttClienter, mpacket *MqttPacket) {
 	atomic.AddInt64(&cl.pubcnt[PubCntTOTAL].final, 1)
@@ -106,10 +106,10 @@ func (cl *mqttListen) fireOnPubFinal(client MqttClienter, mpacket *MqttPacket) {
 	case 2:
 		atomic.AddInt64(&cl.pubcnt[PubCntQoS2].final, 1)
 	}
-	cl.FireListener(EventPublish, "OnPubFinal", createMqttPubEvent(client, PubStatus_final, cl.pubcnt), mpacket)
+	cl.FireListener(EventPublish, "OnPubFinal", createMqttPubEvent(client, PubStatusfinal, cl.pubcnt), mpacket)
 }
 
-//接收消息事件监听
+// MqttRecvPubListener 接收消息事件监听
 type MqttRecvPubListener interface {
 	event.Listener
 	//接收到了消息
@@ -132,6 +132,7 @@ func (cl *mqttListen) fireOnRecvPublish(client MqttClienter, topic string, paylo
 	cl.FireListener(EventRecvPub, "OnRecvPublish", createMqttRecvPubEvent(client, recvPubCnt), topic, payload, qos)
 }
 
+// MqttSubListener 订阅事件监听
 type MqttSubListener interface {
 	event.Listener
 	OnSubStart(event *MqttEvent, sub []SubFilter)
@@ -154,6 +155,7 @@ func (cl *mqttListen) fireOnSubSuccess(client MqttClienter, sub []SubFilter, res
 	cl.FireListener(EventSubscribe, "OnSubSuccess", createMqttEvent(client, EventSubscribe), sub, result)
 }
 
+// MqttUnSubListener 取消订阅事件监听
 type MqttUnSubListener interface {
 	event.Listener
 	OnUnSubStart(event *MqttEvent, filter []string)
@@ -177,7 +179,7 @@ func (cl *mqttListen) fireOnUnSubSuccess(client MqttClienter, filter []string) {
 	cl.FireListener(EventUnSub, "OnUnSubSuccess", createMqttEvent(client, EventUnSub), filter)
 }
 
-//发送接收报文接口
+// MqttPacketListener 发送接收报文接口
 type MqttPacketListener interface {
 	event.Listener
 	//接收到报文
@@ -205,6 +207,7 @@ func (cl *mqttListen) fireOnSendPacket(client MqttClienter, packet packet.Messag
 	cl.FireListener(EventPacket, "OnSendPacket", createMqttEvent(client, EventPacket), packet, sendPacketCnt, err)
 }
 
+// MqttDisConnListener 断开连接事件
 type MqttDisConnListener interface {
 	event.Listener
 	OnDisconning(event *MqttEvent)
@@ -232,6 +235,7 @@ func (cl *mqttListen) fireOnLostConn(client MqttClienter, err error) {
 	cl.FireListener(EventDisconn, "OnLostConn", createMqttEvent(client, EventDisconn), err)
 }
 
+// DefaultListener 默认全部事件实现，不做任何事情
 type DefaultListener struct {
 	DefaultConnListen
 	DefaultSubscribeListen
@@ -240,79 +244,122 @@ type DefaultListener struct {
 	DefaultPubListen
 	DefaultRecvPubListen
 }
+
+// DefaultConnListen 默认连接事件监听
 type DefaultConnListen struct {
 }
 
+// OnConnStart 连接开始
 func (*DefaultConnListen) OnConnStart(event *MqttConnEvent) {
 }
+
+// OnConnSuccess 连接开成功
 func (*DefaultConnListen) OnConnSuccess(event *MqttConnEvent) {
 
 }
+
+// OnConnFailure 连接失败
 func (*DefaultConnListen) OnConnFailure(event *MqttConnEvent, returncode int, err error) {
 
 }
 
+// DefaultSubscribeListen 默认订阅事件监听
 type DefaultSubscribeListen struct {
 }
 
+// OnSubStart 订阅开始
 func (*DefaultSubscribeListen) OnSubStart(event *MqttEvent, sub []SubFilter) {
 }
+
+// OnSubSuccess 订阅成功
 func (*DefaultSubscribeListen) OnSubSuccess(event *MqttEvent, sub []SubFilter, result []QoS) {
 }
 
+// DefaultUnSubListen 取消订阅事件监听
 type DefaultUnSubListen struct {
 }
 
+// OnUnSubStart 取消订阅开始
 func (*DefaultUnSubListen) OnUnSubStart(event *MqttEvent, filter []string) {
 
 }
+
+// OnUnSubSuccess 取消订阅成功
 func (*DefaultUnSubListen) OnUnSubSuccess(event *MqttEvent, filter []string) {
 
 }
 
+// DefaultPubListen 默认发布消息事件监听
 type DefaultPubListen struct {
 }
 
+// OnPubReady 发布准备
 func (*DefaultPubListen) OnPubReady(event *MqttPubEvent, mp *MqttPacket) {
 
 }
+
+// OnPubSuccess 发布成功
 func (*DefaultPubListen) OnPubSuccess(event *MqttPubEvent, mp *MqttPacket) {
 
 }
+
+// OnPubFinal 发布完成
 func (*DefaultPubListen) OnPubFinal(event *MqttPubEvent, mp *MqttPacket) {
 
 }
 
+// DefaultRecvPubListen 接收消息事件监听
 type DefaultRecvPubListen struct {
 }
 
+// OnRecvPublish 接收到消息
+// topic 主题
+// payload 有效载荷
+// qos 服务质量
 func (l *DefaultRecvPubListen) OnRecvPublish(event *MqttRecvPubEvent, topic string, payload []byte, qos QoS) {
 
 }
 
+// DefaultPacketListen 发送接收报文事件监听
 type DefaultPacketListen struct {
 }
 
+// OnRecvPacket 接收报文事件
+// event 事件
+// msg 报文
+// recvPacketCnt 接收报文数量
 func (l *DefaultPacketListen) OnRecvPacket(event *MqttEvent, msg packet.MessagePacket, recvPacketCnt int64) {
 
 }
+
+// OnSendPacket 发送报文事件
+// event 事件
+// msg 报文
+// sendPacketCnt 发送报文数量
 func (l *DefaultPacketListen) OnSendPacket(event *MqttEvent, msg packet.MessagePacket, sendPacketCnt int64, err error) {
 
 }
 
+// DefaultDisConnListen 断开连接事件监听
 type DefaultDisConnListen struct {
 }
 
+// OnDisconning 关闭连接中
 func (l *DefaultDisConnListen) OnDisconning(event *MqttEvent) {
 
 }
+
+// OnDisconned 已经关闭连接
 func (l *DefaultDisConnListen) OnDisconned(event *MqttEvent) {
 
 }
+
+// OnLostConn 失去连接事件
 func (l *DefaultDisConnListen) OnLostConn(event *MqttEvent, err error) {
 
 }
 
+// DefaultPrintListener mqtt全部事件,可以输出事件信息
 type DefaultPrintListener struct {
 	DefaultPrintConnListen
 	DefaultPrintSubscribeListen
@@ -321,81 +368,122 @@ type DefaultPrintListener struct {
 	DefaultPrintPubListen
 	DefaultPrintRecvPubListen
 }
+
+// DefaultPrintConnListen 默认连接事件监听
 type DefaultPrintConnListen struct {
 }
 
+// OnConnStart 连接开始
 func (*DefaultPrintConnListen) OnConnStart(event *MqttConnEvent) {
 	Mlog.Debugf("OnConnStart:共连接:%d,本次连接:%d", event.GetTotalRecnt(), event.GetCurRecnt())
 }
+
+// OnConnSuccess 连接开成功
 func (*DefaultPrintConnListen) OnConnSuccess(event *MqttConnEvent) {
 	Mlog.Debugf("OnConnSuccess:共连接:%d,本次连接:%d", event.GetTotalRecnt(), event.GetCurRecnt())
 }
+
+// OnConnFailure 连接失败
 func (*DefaultPrintConnListen) OnConnFailure(event *MqttConnEvent, returncode int, err error) {
 	Mlog.Debugf("OnConnFailure(%d):%v", returncode, err)
 }
 
+// DefaultPrintSubscribeListen 默认订阅事件监听
 type DefaultPrintSubscribeListen struct {
 }
 
+// OnSubStart 订阅开始
 func (*DefaultPrintSubscribeListen) OnSubStart(event *MqttEvent, sub []SubFilter) {
 	Mlog.Debugf("OnSubStart:%v", sub)
 }
+
+// OnSubSuccess 订阅成功
 func (*DefaultPrintSubscribeListen) OnSubSuccess(event *MqttEvent, sub []SubFilter, result []QoS) {
 	Mlog.Debugf("OnSubSuccess:%v:%v", sub, result)
 
 }
 
+// DefaultPrintUnSubListen 取消订阅事件监听
 type DefaultPrintUnSubListen struct {
 }
 
+// OnUnSubStart 取消订阅开始
 func (*DefaultPrintUnSubListen) OnUnSubStart(event *MqttEvent, filter []string) {
 	Mlog.Debugf("OnUnSubStart:%v", filter)
 }
+
+// OnUnSubSuccess 取消订阅成功
 func (*DefaultPrintUnSubListen) OnUnSubSuccess(event *MqttEvent, filter []string) {
 	Mlog.Debugf("OnUnSubSuccess:%v", filter)
 }
 
+// DefaultPrintPubListen 默认发布消息事件监听
 type DefaultPrintPubListen struct {
 }
 
+// OnPubReady 发布准备
 func (*DefaultPrintPubListen) OnPubReady(event *MqttPubEvent, mp *MqttPacket) {
 	Mlog.Debugf("OnPubReady:%v", event.GetSendCnt(PubCntTOTAL))
 }
+
+// OnPubSuccess 发布成功
 func (*DefaultPrintPubListen) OnPubSuccess(event *MqttPubEvent, mp *MqttPacket) {
 	Mlog.Debugf("OnPubSuccess:%v", mp.Packet)
 
 }
+
+// OnPubFinal 发布完成
 func (*DefaultPrintPubListen) OnPubFinal(event *MqttPubEvent, mp *MqttPacket) {
 	Mlog.Debugf("OnPubFinal:%v", mp.Packet)
 }
 
+// DefaultPrintRecvPubListen 接收消息事件监听
 type DefaultPrintRecvPubListen struct {
 }
 
+// OnRecvPublish 接收到消息
+// topic 主题
+// payload 有效载荷
+// qos 服务质量
 func (l *DefaultPrintRecvPubListen) OnRecvPublish(event *MqttRecvPubEvent, topic string, payload []byte, qos QoS) {
 	Mlog.Debugf("OnRecvPublish:%s(%d) :%s", topic, qos, string(payload))
 }
 
+// DefaultPrintPacketListen 发送接收报文事件监听
 type DefaultPrintPacketListen struct {
 }
 
+// OnRecvPacket 接收报文事件
+// event 事件
+// msg 报文
+// recvPacketCnt 接收报文数量
 func (l *DefaultPrintPacketListen) OnRecvPacket(event *MqttEvent, msg packet.MessagePacket, recvPacketCnt int64) {
 	Mlog.Debugf("OnRecvPacket:(%d) :%v", recvPacketCnt, msg)
 }
+
+// OnSendPacket 发送报文事件
+// event 事件
+// msg 报文
+// sendPacketCnt 发送报文数量
 func (l *DefaultPrintPacketListen) OnSendPacket(event *MqttEvent, msg packet.MessagePacket, sendPacketCnt int64, err error) {
 	Mlog.Debugf("OnSendPacket:(%d) :%v\n %v", sendPacketCnt, msg, err)
 }
 
+// DefaultPrintDisConnListen 断开连接事件监听
 type DefaultPrintDisConnListen struct {
 }
 
+// OnLostConn 失去连接事件
 func (l *DefaultPrintDisConnListen) OnLostConn(event *MqttEvent, err error) {
 	Mlog.Debugf("OnLostConn :%v", err)
 }
 
+// OnDisconning 关闭连接中
 func (l *DefaultPrintDisConnListen) OnDisconning(event *MqttEvent) {
 	Mlog.Debugf("OnDisconning")
 }
+
+// OnDisconned 已经关闭连接
 func (l *DefaultPrintDisConnListen) OnDisconned(event *MqttEvent) {
 	Mlog.Debugf("OnDisconned")
 }

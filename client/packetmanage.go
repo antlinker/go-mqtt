@@ -6,6 +6,10 @@ import (
 	"github.com/antlinker/go-mqtt/packet"
 )
 
+// PacketManager 报文发送接收管理
+// 实现 subscribe unsubscrie publish报文发送时的报文标识分配
+// 完成qos1 qos2报文的重发
+// 记录 subscribe unsubscrie publish 发送时记录,完成时移除
 type PacketManager interface {
 	sendPacketer
 	sendUnfinaler
@@ -47,12 +51,13 @@ type receiveQos2 interface {
 }
 
 const (
-	//发送
-	Direct_Send int = iota
-	//接收
-	Direct_Recive
+	// DirectSend 发送
+	DirectSend int = iota
+	// DirectRecive 接收
+	DirectRecive
 )
 
+// CreateMqttPacket 创建发送报文
 func CreateMqttPacket(direct int, msg packet.PacketIdMessage) *MqttPacket {
 	return &MqttPacket{
 		Direct:  direct,
@@ -62,7 +67,7 @@ func CreateMqttPacket(direct int, msg packet.PacketIdMessage) *MqttPacket {
 	}
 }
 
-//发送时
+// MqttPacket 发送时
 //发送的订阅取消订阅或发布消息报文
 //订阅、取消订阅报文发送失败不会重新发送
 //订阅报文直到收到Suback报文，Wait()才会返回，触发OnSubscribeSuccess事件
@@ -85,17 +90,17 @@ type MqttPacket struct {
 	sending bool
 }
 
-//是否正在发送中
+// IsSending 是否正在发送中
 func (m *MqttPacket) IsSending() bool {
 	return m.sending
 }
 
-//qos2的Pubrec报文接收事件
+// Rectime qos2的Pubrec报文接收事件
 func (m *MqttPacket) Rectime() time.Time {
 	return m.rectime
 }
 
-//错误，如果不为nil发送失败
+// Err 错误，如果不为nil发送失败
 func (m *MqttPacket) Err() error {
 	return m.err
 }
@@ -108,7 +113,7 @@ func (m *MqttPacket) finalish(err error) {
 	}
 }
 
-//等待发送完成、失败，或超时
+// WaitTimeout 等待发送完成、失败，或超时
 //返回　true等待了内部返回　false未等到返回超时
 //注：并不意味着返回false就是发送失败，必须判断Err()==nil则发送失败
 func (m *MqttPacket) WaitTimeout(timeout time.Duration) bool {
@@ -121,7 +126,7 @@ func (m *MqttPacket) WaitTimeout(timeout time.Duration) bool {
 	return false
 }
 
-//等待发送完成或发送失败
+// Wait 等待发送完成或发送失败
 func (m *MqttPacket) Wait() {
 	<-m.wait
 }

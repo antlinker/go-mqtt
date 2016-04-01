@@ -39,7 +39,7 @@ func (c *antClient) pingreq() {
 		<-time.After(c.heartbeatCheckInterval)
 		if c.lasttime.Add(c.keepAlive).Add(c.heartbeatCheckInterval).Sub(time.Now()) < 0 {
 			//服务器已经超时准备断开连接
-			c.errClose(TimeoutError)
+			c.errClose(ErrTimeout)
 		}
 	}()
 }
@@ -113,7 +113,7 @@ func (c *antClient) doPublish(publish *packet.Publish) {
 	case packet.QOS_2:
 		pubrec := packet.NewPubrec()
 		pubrec.SetPacketId(packetid)
-		c.packetManager.AddReceivePacket(CreateMqttPacket(Direct_Recive, publish))
+		c.packetManager.AddReceivePacket(CreateMqttPacket(DirectRecive, publish))
 		c._send(pubrec)
 
 		return

@@ -10,7 +10,7 @@ dev:
         reload: true
 build:
   steps:
-    - wercker/golint
+    - wercker/golint client
     - script:
         name: go build
         code: |

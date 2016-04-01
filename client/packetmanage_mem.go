@@ -11,6 +11,7 @@ import (
 	"github.com/antlinker/go-mqtt/packet"
 )
 
+// NewMemPacketManager 内存版报文管理
 func NewMemPacketManager(client *antClient) PacketManager {
 	m := new(MemPacketManager)
 	m.client = client
@@ -20,15 +21,18 @@ func NewMemPacketManager(client *antClient) PacketManager {
 	return m
 }
 
+// BasePacketManager 报文管理基础类
 type BasePacketManager struct {
 	client         *antClient
 	reSendInterval time.Duration
 }
 
+// Send 发送报文 主要用来重发pub rel
 func (b *BasePacketManager) Send(msg packet.MessagePacket) error {
 	return b.client._send(msg)
 }
 
+// MemPacketManager 内存报文管理
 type MemPacketManager struct {
 	memSendPacketer
 	memSendUnfinaler
@@ -36,20 +40,21 @@ type MemPacketManager struct {
 	memReceiveQos2
 	BasePacketManager
 	stop            chan struct{}
-	packetIdFactory *util.PacketIdFactory
+	packetIDFactory *util.PacketIdFactory
 }
 
 func (m *MemPacketManager) init() {
-	m.packetIdFactory = util.NewPacketIdFactory()
+	m.packetIDFactory = util.NewPacketIdFactory()
 
-	m.memSendUnfinaler.packetIdFactory = m.packetIdFactory
+	m.memSendUnfinaler.packetIDFactory = m.packetIDFactory
 	m.memSendUnfinaler.storePacketMap = cmap.NewConcurrencyMap()
 	m.memSendQos2Unfinaler.sendQsos2Map = cmap.NewConcurrencyMap()
 	m.memReceiveQos2.recvQsos2Map = cmap.NewConcurrencyMap()
 
-	m.memSendPacketer.start(m.packetIdFactory)
+	m.memSendPacketer.start(m.packetIDFactory)
 }
 
+// PopSend 弹出第一个需要发送的报文
 func (m *MemPacketManager) PopSend() *MqttPacket {
 	mp := m.memSendPacketer.PopSend()
 	if mp != nil {
@@ -61,6 +66,7 @@ func (m *MemPacketManager) PopSend() *MqttPacket {
 	return nil
 }
 
+// Start 开始报文管理,创建重发检测go程
 func (m *MemPacketManager) Start() {
 	m.stop = make(chan struct{})
 	go func() {
@@ -75,6 +81,8 @@ func (m *MemPacketManager) Start() {
 		}
 	}()
 }
+
+// Stop 停止报文管理
 func (m *MemPacketManager) Stop() {
 
 	m.memSendPacketer._stop()
@@ -106,7 +114,7 @@ func (m *MemPacketManager) unfinal2send() {
 			} else {
 				nmp := m.RemoveSendUnfinal(msg.GetPacketId())
 				if nmp != nil {
-					nmp.finalish(TimeoutError)
+					nmp.finalish(ErrTimeout)
 				}
 
 			}
@@ -130,7 +138,7 @@ func (m *MemPacketManager) unfinal2send() {
 
 type memSendPacketer struct {
 	send            *list.List
-	packetIdFactory *util.PacketIdFactory
+	packetIDFactory *util.PacketIdFactory
 	rwlock          sync.RWMutex
 
 	sendcond *sync.Cond
@@ -138,10 +146,10 @@ type memSendPacketer struct {
 	stopwait sync.WaitGroup
 }
 
-func (m *memSendPacketer) start(packetIdFactory *util.PacketIdFactory) {
+func (m *memSendPacketer) start(packetIDFactory *util.PacketIdFactory) {
 	m.send = list.New()
 	m.sendcond = sync.NewCond(&m.rwlock)
-	m.packetIdFactory = packetIdFactory
+	m.packetIDFactory = packetIDFactory
 	m.stop = false
 }
 func (m *memSendPacketer) AddSendPacket(pkt *MqttPacket) error {
@@ -153,13 +161,13 @@ func (m *memSendPacketer) AddSendPacket(pkt *MqttPacket) error {
 		if msg.GetHeaderType() == packet.TYPE_PUBLISH {
 			pub := msg.(*packet.Publish)
 			if pub.GetQos() != packet.QOS_0 {
-				pid := m.packetIdFactory.CreateId()
+				pid := m.packetIDFactory.CreateId()
 				msg.SetPacketId(pid)
 
 			}
 
 		} else {
-			pid := m.packetIdFactory.CreateId()
+			pid := m.packetIDFactory.CreateId()
 			msg.SetPacketId(pid)
 		}
 	}
@@ -198,10 +206,9 @@ func (m *memSendPacketer) PopSend() *MqttPacket {
 			m.send.Remove(elem)
 			mp.sending = true
 			return mp
+		} else if m.stop {
+			return nil
 		} else {
-			if m.stop {
-				return nil
-			}
 			m.stopwait.Add(1)
 			m.sendcond.Wait()
 			m.stopwait.Done()
@@ -220,7 +227,7 @@ func (m *memSendPacketer) _stop() {
 
 type memSendUnfinaler struct {
 	storePacketMap  cmap.ConcurrencyMap
-	packetIdFactory *util.PacketIdFactory
+	packetIDFactory *util.PacketIdFactory
 }
 
 //移动到未完成
@@ -240,7 +247,7 @@ func (m *memSendUnfinaler) GetSendUnfinal(id uint16) *MqttPacket {
 
 //移除未完成发送信息
 func (m *memSendUnfinaler) RemoveSendUnfinal(id uint16) *MqttPacket {
-	m.packetIdFactory.ReleaseId(id)
+	m.packetIDFactory.ReleaseId(id)
 	e, _ := m.storePacketMap.Remove(id)
 
 	if e != nil {
