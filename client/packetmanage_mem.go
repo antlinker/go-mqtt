@@ -74,7 +74,7 @@ func (m *MemPacketManager) Start() {
 			select {
 			case <-time.After(m.reSendInterval):
 			case <-m.stop:
-				break
+				return
 			}
 			m.unfinal2send()
 

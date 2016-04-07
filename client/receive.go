@@ -55,7 +55,7 @@ func (c *antClient) doReceive() {
 			select {
 			case msg := <-c.recvChan:
 				if msg == nil {
-					break
+					return
 				}
 				c.doMsgPacket(msg)
 			case <-time.After(c.keepAlive):
