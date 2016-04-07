@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/alog.v1"
+	"github.com/antlinker/alog"
 
 	"golang.org/x/net/websocket"
 
