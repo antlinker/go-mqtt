@@ -41,8 +41,10 @@ func (c *antClient) reConnect() error {
 					continue
 				}
 			}
+			c.connclosed = false
 			c.creReceive()
 			c.fireOnConnSuccess(c)
+
 			break
 		}
 
@@ -87,7 +89,7 @@ func (c *antClient) errCloseHandle(cerr *error) {
 		if ok {
 			c.errClose(e)
 		} else {
-			c.errClose(fmt.Errorf("出现异常进行关闭", err))
+			c.errClose(fmt.Errorf("出现异常进行关闭:%v", err))
 		}
 		return
 	}
@@ -98,9 +100,10 @@ func (c *antClient) errCloseHandle(cerr *error) {
 }
 
 func (c *antClient) errClose(err error) {
-	if c.closing {
+	if c.connclosed {
 		return
 	}
+	c.connclosed = true
 	c.setIssend(false)
 	c.conn.Close()
 	c.runGoWait.Wait()
