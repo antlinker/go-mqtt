@@ -179,7 +179,8 @@ type antClient struct {
 	issend    bool
 	isendlock sync.RWMutex
 	sendcond  *sync.Cond
-	closing   bool
+
+	connclosed bool
 }
 
 func (c *antClient) SetPacketManager(manager PacketManager) {
@@ -207,8 +208,7 @@ func (c *antClient) Connect() error {
 		c.packetManager.Start()
 		c.recvChan = make(chan packet.MessagePacket)
 		c.sendcond = sync.NewCond(&c.connlock)
-		c.creGoSend()
-		c.creDoReceive()
+
 	}
 
 	err := c.fisrtConnect()
@@ -216,6 +216,8 @@ func (c *antClient) Connect() error {
 		c.connected = false
 		return err
 	}
+	c.creGoSend()
+	c.creDoReceive()
 	c.setIssend(true)
 	return nil
 }
