@@ -123,7 +123,6 @@ func (m *MqttPacket) WaitTimeout(timeout time.Duration) bool {
 	case <-time.After(timeout):
 		return false
 	}
-	return false
 }
 
 // Wait 等待发送完成或发送失败
