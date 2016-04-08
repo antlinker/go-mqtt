@@ -37,9 +37,10 @@ func (c *antClient) pingreq() {
 	go func() {
 		defer c.runGoWait.Done()
 		<-time.After(c.heartbeatCheckInterval)
-		if c.lasttime.Add(c.keepAlive).Add(c.heartbeatCheckInterval).Sub(time.Now()) < 0 {
-			//服务器已经超时准备断开连接
+
+		if c.lasttime.Add(c.keepAlive).Add(c.heartbeatCheckInterval).Sub(time.Now()) <= 0 {
 			c.errClose(ErrTimeout)
+			return
 		}
 	}()
 }
@@ -59,7 +60,10 @@ func (c *antClient) doReceive() {
 				}
 				c.doMsgPacket(msg)
 			case <-time.After(c.keepAlive):
-				c.pingreq()
+				if !c.connclosed {
+					c.pingreq()
+				}
+
 			}
 		}
 	} else {
