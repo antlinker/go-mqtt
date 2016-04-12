@@ -24,7 +24,8 @@ type Publish struct {
 	FixedHeader
 
 	//可变头
-	topic    *Topic //主题名
+	topic []byte //主题名
+
 	packetId uint16 //报文标识符
 
 	cache      bool      //司否启用缓存 不启用缓存使用packetdata 使用缓存 使用datain
@@ -43,9 +44,7 @@ func NewPublish() Publish {
 }
 
 func NewPublishAll(topic string, payload []byte, qos QoS, retain bool) *Publish {
-	msg := &Publish{}
-	msg.SetTopicByString(topic)
-	msg.payload = payload
+	msg := &Publish{topic: []byte(topic), payload: payload}
 	if retain {
 		msg.hdata = (TYPE_PUBLISH << 4) | (uint8(qos) << 1) | 1
 	} else {
@@ -54,17 +53,10 @@ func NewPublishAll(topic string, payload []byte, qos QoS, retain bool) *Publish 
 
 	return msg
 }
-func NewPublishTopic(topic *Topic, payload []byte, qos QoS) *Publish {
-	msg := &Publish{}
-	msg.topic = topic
-	msg.payload = payload
-	msg.hdata = (TYPE_PUBLISH << 4) | (uint8(qos) << 1)
-	return msg
-}
 
 //构造一个保留消息
-func NewPublishRetain(topic *Topic, payload []byte, qos QoS) *Publish {
-	msg := &Publish{topic: topic, payload: payload}
+func NewPublishRetain(topic string, payload []byte, qos QoS) *Publish {
+	msg := &Publish{topic: []byte(topic), payload: payload}
 	msg.hdata = (TYPE_PUBLISH << 4) | (uint8(qos) << 1) | 1
 	return msg
 }
@@ -146,36 +138,25 @@ func (c *Publish) GetRetain() bool {
 }
 
 //设置主题名
-func (c *Publish) SetTopic(topic *Topic) {
+func (c *Publish) SetTopic(topic []byte) {
 	c.topic = topic
 	//c.ispacket = false
 }
 
 //设置主题名
-func (c *Publish) SetTopicByBytes(topic []byte) {
-	c.topic = NewTopic(string(topic))
-	//c.ispacket = false
-}
-
-//设置主题名
 func (c *Publish) SetTopicByString(topic string) {
-	c.topic = NewTopic(topic)
+	c.topic = []byte(topic)
 	//c.ispacket = false
 }
 
 //获取主题名
-func (c *Publish) GetTopic() *Topic {
+func (c *Publish) GetTopic() []byte {
 	return c.topic
 }
 
 //获取主题名
-func (c *Publish) GetTopicByBytes() []byte {
-	return c.topic.BytesValue()
-}
-
-//获取主题名
 func (c *Publish) GetTopicByString() string {
-	return c.topic.String()
+	return string(c.topic)
 }
 
 //设置报文标识符
@@ -216,9 +197,9 @@ func (c *Publish) GetPayload() []byte {
 //计算剩余长度
 func (c *Publish) totalRemain() int {
 	if c.GetQos() == 0 {
-		return c.topic.Len() + 2 + len(c.payload)
+		return len(c.topic) + 2 + len(c.payload)
 	}
-	return c.topic.Len() + 4 + len(c.payload)
+	return len(c.topic) + 4 + len(c.payload)
 }
 func formatPayload(payload []byte) string {
 	n := len(payload)
@@ -241,9 +222,8 @@ func (c *Publish) UnPacket(header byte, msg []byte) error {
 	// c.SetDupFlag(header&0x8 == 0x8)
 	c.hdata = header
 	curindex := 0
-	var tmp []byte
-	tmp, curindex = BytesRBString(msg, curindex)
-	c.topic = NewTopic(string(tmp))
+	c.topic, curindex = BytesRBString(msg, curindex)
+
 	if c.GetQos() > QOS_0 {
 		c.packetId, curindex = BytesRUint16(msg, curindex)
 	}
@@ -272,7 +252,7 @@ func (c *Publish) Packet() []byte {
 	curind := 0
 	curind = BytesWByte(data, c.hdata, curind)
 	curind = BytesWBytes(data, remlenbyte, curind)
-	curind = BytesWBString(data, c.topic.BytesValue(), curind)
+	curind = BytesWBString(data, c.topic, curind)
 	if c.GetQos() > QOS_0 {
 		curind = BytesWUint16(data, c.packetId, curind)
 	}
@@ -302,15 +282,15 @@ func (c *Publish) UnPacketFile(header byte, varheader []byte, in io.Reader) erro
 
 //打包到，大数据传输缓存中写入数据 除PUBLIST外其他报文不需要重载
 func (c *Publish) PacketTo(out io.Writer, size int) error {
-	c.remlen = c.topic.len + 4 + c.datainsize
+	c.remlen = len(c.topic) + 4 + c.datainsize
 	//fmt.Printf("剩余字节%d %X\n", c.remlen, c.remlen)
 	remlenbyte := Remlen2Bytes(int32(c.remlen))
 	//fmt.Printf("剩余字节 %X\n", remlenbyte)
-	data := make([]byte, 1+len(remlenbyte)+c.topic.len+4)
+	data := make([]byte, 1+len(remlenbyte)+len(c.topic)+4)
 	curind := 0
 	curind = BytesWByte(data, c.hdata, curind)
 	curind = BytesWBytes(data, remlenbyte, curind)
-	curind = BytesWBString(data, c.topic.BytesValue(), curind)
+	curind = BytesWBString(data, c.topic, curind)
 	curind = BytesWUint16(data, c.packetId, curind)
 	out.Write(data)
 	buff := [1024]byte{}

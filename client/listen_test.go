@@ -87,15 +87,15 @@ type TestPublishListen struct {
 
 func (l *TestPublishListen) OnPubReady(event *MqttPubEvent, mp *MqttPacket) {
 	l.stopchan <- 1
-	Expect(mp.Direct).To(Equal(Direct_Send))
+	Expect(mp.Direct).To(Equal(DirectSend))
 
 }
 func (l *TestPublishListen) OnPubSuccess(event *MqttPubEvent, mp *MqttPacket) {
-	Expect(mp.Direct).To(Equal(Direct_Send))
+	Expect(mp.Direct).To(Equal(DirectSend))
 	l.stopchan <- 2
 }
 func (l *TestPublishListen) OnPubFinal(event *MqttPubEvent, mp *MqttPacket) {
-	Expect(mp.Direct).To(Equal(Direct_Send))
+	Expect(mp.Direct).To(Equal(DirectSend))
 	l.stopchan <- 3
 
 }
@@ -122,7 +122,7 @@ func (l *TestPacketListen) OnRecvPacket(event *MqttEvent, msg packet.MessagePack
 		l.stopchan <- 1
 	}
 }
-func (l *TestPacketListen) OnSendPacket(event *MqttEvent, msg packet.MessagePacket, sendPacketCnt int64) {
+func (l *TestPacketListen) OnSendPacket(event *MqttEvent, msg packet.MessagePacket, sendPacketCnt int64, err error) {
 	if msg.GetHeaderType() == packet.TYPE_PUBLISH {
 		l.stopchan <- 2
 	}

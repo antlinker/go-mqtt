@@ -1,13 +1,10 @@
 package packet
 
-import (
-	//"fmt"
-	//"os"
-	"bufio"
-	"io"
-	"sync"
-	"testing"
-)
+import
+//"fmt"
+//"os"
+
+"testing"
 
 func BenchmarkConnectFullValue(b *testing.B) {
 	var conn = NewConnect()
@@ -356,18 +353,18 @@ func BenchmarkSubscribeFullValue(b *testing.B) {
 	var conn = NewSubscribe()
 	for i := 0; i < b.N; i++ {
 		conn.SetPacketId(11000)
-		conn.AddFilter(NewTopic("/topic/test0"), 0)
-		conn.AddFilter(NewTopic("/topic/test1"), 1)
-		conn.AddFilter(NewTopic("/topic/test2"), 2)
+		conn.AddFilter("/topic/test0", 0)
+		conn.AddFilter("/topic/test1", 1)
+		conn.AddFilter("/topic/test2", 2)
 	}
 }
 
 func BenchmarkSubscribePacket(b *testing.B) {
 	var conn = NewSubscribe()
 	conn.SetPacketId(11000)
-	conn.AddFilter(NewTopic("/topic/test0"), 0)
-	conn.AddFilter(NewTopic("/topic/test1"), 1)
-	conn.AddFilter(NewTopic("/topic/test2"), 2)
+	conn.AddFilter("/topic/test0", 0)
+	conn.AddFilter("/topic/test1", 1)
+	conn.AddFilter("/topic/test2", 2)
 	for i := 0; i < b.N; i++ {
 
 		conn.Packet()
@@ -377,9 +374,9 @@ func BenchmarkSubscribePacket(b *testing.B) {
 func BenchmarkSubscribeUnPacket(b *testing.B) {
 	var conn = NewSubscribe()
 	conn.SetPacketId(11000)
-	conn.AddFilter(NewTopic("/topic/test0"), 0)
-	conn.AddFilter(NewTopic("/topic/test1"), 1)
-	conn.AddFilter(NewTopic("/topic/test2"), 2)
+	conn.AddFilter("/topic/test0", 0)
+	conn.AddFilter("/topic/test1", 1)
+	conn.AddFilter("/topic/test2", 2)
 	var tmp = conn.Packet()
 
 	var newconn = NewSubscribe()
@@ -612,32 +609,32 @@ func BenchmarkNewDisconnect(b *testing.B) {
 	}
 }
 
-func BenchmarkReadMessage(b *testing.B) {
-	var conn = NewConnect()
-	conn.SetClientIdByString("testid")
-	conn.SetWillTopicInfoByString("/topic/test", "这是遗嘱消息", QOS_1, true)
-	conn.SetKeepAlive(80)
-	conn.SetUserNameByString("中文")
-	conn.SetPasswordByString("password")
-	var tmp = conn.Packet()
-	preader, pwriter := io.Pipe()
-	reader := bufio.NewReader(preader)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		for i := 0; i < b.N; i++ {
-			pwriter.Write(tmp)
-			//t.Logf("第%d写入", i)
-		}
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
-		for i := 0; i < b.N; i++ {
-			ReaderMessagePacket(reader)
-			//t.Logf("第%d次读取", i)
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-}
+// func BenchmarkReadMessage(b *testing.B) {
+// 	var conn = NewConnect()
+// 	conn.SetClientIdByString("testid")
+// 	conn.SetWillTopicInfoByString("/topic/test", "这是遗嘱消息", QOS_1, true)
+// 	conn.SetKeepAlive(80)
+// 	conn.SetUserNameByString("中文")
+// 	conn.SetPasswordByString("password")
+// 	var tmp = conn.Packet()
+// 	preader, pwriter := io.Pipe()
+// 	reader := bufio.NewReader(preader)
+// 	wg := &sync.WaitGroup{}
+// 	wg.Add(1)
+// 	go func() {
+// 		for i := 0; i < b.N; i++ {
+// 			pwriter.Write(tmp)
+// 			//t.Logf("第%d写入", i)
+// 		}
+// 		wg.Done()
+// 	}()
+// 	wg.Add(1)
+// 	go func() {
+// 		for i := 0; i < b.N; i++ {
+// 			ReaderMessagePacket(reader)
+// 			//t.Logf("第%d次读取", i)
+// 		}
+// 		wg.Done()
+// 	}()
+// 	wg.Wait()
+// }

@@ -268,8 +268,7 @@ func (c *antClient) Publish(topic string, qos QoS, retain bool, payload interfac
 //订阅
 func (c *antClient) Subscribe(filter string, qos QoS) (*MqttPacket, error) {
 	sub := packet.NewSubscribe(1)
-	topic := packet.NewTopic(filter)
-	sub.AddFilter(topic, packet.QoS(qos))
+	sub.AddFilter(filter, packet.QoS(qos))
 	c.fireOnSubStart(c, []SubFilter{{filter, qos}})
 	return c.addPacket(sub)
 }
@@ -282,7 +281,7 @@ func (c *antClient) Subscribes(filters ...SubFilter) (*MqttPacket, error) {
 	sub := packet.NewSubscribe(1)
 
 	for _, sf := range filters {
-		sub.AddFilter(packet.NewTopic(sf.filter), packet.QoS(sf.qos))
+		sub.AddFilter(sf.filter, packet.QoS(sf.qos))
 	}
 	c.fireOnSubStart(c, filters)
 	return c.addPacket(sub)

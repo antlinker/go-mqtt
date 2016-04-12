@@ -192,7 +192,7 @@ func (c *antClient) doSuback(suback *packet.Suback) {
 		subfs := make([]SubFilter, 0, len(sub.GetFilters()))
 		for _, filter := range sub.GetFilters() {
 			subfs = append(subfs, SubFilter{
-				filter: filter.GetFilter().String(),
+				filter: filter.GetFilter(),
 				qos:    QoS(filter.GetQos()),
 			})
 

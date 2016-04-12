@@ -15,16 +15,16 @@ import (
 
 //主题过滤器
 type TopicFilter struct {
-	filter *Topic
+	filter string
 	qos    QoS
 }
 
-func NewTopicFilter(filter *Topic, qos QoS) *TopicFilter {
+func NewTopicFilter(filter string, qos QoS) *TopicFilter {
 	return &TopicFilter{filter, qos}
 }
 
 //获取主题过滤器
-func (t *TopicFilter) GetFilter() *Topic {
+func (t *TopicFilter) GetFilter() string {
 	return t.filter
 }
 func (t *TopicFilter) GetQos() QoS {
@@ -33,7 +33,7 @@ func (t *TopicFilter) GetQos() QoS {
 func (t *TopicFilter) SetQos(qos QoS) {
 	t.qos = qos
 }
-func (t *TopicFilter) SetFilter(filter *Topic) {
+func (t *TopicFilter) SetFilter(filter string) {
 	t.filter = filter
 }
 
@@ -45,7 +45,7 @@ func (t *TopicFilter) IsValidTopicFilter() bool {
 	//		//fmt.Println(t.filter.value, pos, len(t.filter.value))
 	//		return false
 	//	}
-	if t.filter.value == "$#" {
+	if t.filter == "$#" {
 		return true
 	}
 	//	if pos > 0 {
@@ -55,7 +55,7 @@ func (t *TopicFilter) IsValidTopicFilter() bool {
 	//			return false
 	//		}
 	//	}
-	tmpv := []rune(t.filter.value)
+	tmpv := []rune(t.filter)
 	for i, v := range tmpv {
 		if v == '+' {
 			if i+1 < len(tmpv) && tmpv[i+1] != '/' {
@@ -86,7 +86,7 @@ type TopicFilterList struct {
 }
 
 //增加主题过滤器
-func (t *TopicFilterList) AddFilter(filter *Topic, qos QoS) *TopicFilterList {
+func (t *TopicFilterList) AddFilter(filter string, qos QoS) *TopicFilterList {
 	t.filters = append(t.filters, &TopicFilter{filter, qos})
 	return t
 }
@@ -143,7 +143,7 @@ func (c *Subscribe) totalRemain() int {
 	sum := 2
 	var fs = c.filters
 	for i := range fs {
-		sum += fs[i].filter.len + 3
+		sum += len(fs[i].filter) + 3
 	}
 	return sum
 }
@@ -152,7 +152,7 @@ func (c *Subscribe) String() string {
 	fstr := "SUBSCRIBE报文标识:" + strconv.Itoa(int(c.packetId)) + "\n"
 	var fs = c.filters
 	for i := range fs {
-		fstr += "主题过滤器" + strconv.Itoa(i) + "(qos质量" + strconv.Itoa(int(fs[i].qos)) + "):" + fs[i].filter.String() + "\n"
+		fstr += "主题过滤器" + strconv.Itoa(i) + "(qos质量" + strconv.Itoa(int(fs[i].qos)) + "):" + fs[i].filter + "\n"
 	}
 
 	return fstr
@@ -182,7 +182,7 @@ func (c *Subscribe) UnPacket(header byte, msg []byte) error {
 			return errors.New("主题过滤器包含U+0000字符关闭连接")
 		}
 
-		c.AddFilter(NewTopic(fs), QoS(qos))
+		c.AddFilter(string(fs), QoS(qos))
 	}
 	return nil
 }
@@ -202,7 +202,7 @@ func (c *Subscribe) Packet() []byte {
 	fs := c.filters
 	for i := range fs {
 
-		curind = BytesWBString(data, fs[i].filter.BytesValue(), curind)
+		curind = BytesWBString(data, []byte(fs[i].filter), curind)
 		curind = BytesWUint8(data, uint8(fs[i].qos), curind)
 	}
 	c.totalen = len(data)

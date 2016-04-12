@@ -159,9 +159,9 @@ func ExampleSubscribe() {
 
 	var conn = NewSubscribe(3)
 	conn.SetPacketId(10000)
-	conn.AddFilter(NewTopic("/topic/test0"), 0)
-	conn.AddFilter(NewTopic("/topic/test1"), 1)
-	conn.AddFilter(NewTopic("/topic/test2"), 2)
+	conn.AddFilter("/topic/test0", 0)
+	conn.AddFilter("/topic/test1", 1)
+	conn.AddFilter("/topic/test2", 2)
 	var tmp = conn.Packet()
 	if uint8(tmp[0]) == TYPE_FLAG_SUBSCRIBE {
 		var newconn = NewSubscribe()
