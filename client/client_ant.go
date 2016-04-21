@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/antlinker/conshash"
 
 	"github.com/antlinker/go-mqtt/packet"
 
@@ -35,19 +38,30 @@ func createRandomClientid() string {
 
 	return clientIDPre + createRandomString(10)
 }
+func parseAddr(addrstr string) ([]string, error) {
+	addrs := strings.Split(addrstr, ",")
+	for _, addr := range addrs {
+		_, err := url.Parse(addr)
+		if err != nil {
+			return nil, errors.New("未设置mqtt连接格式错误")
+		}
+
+	}
+
+	return addrs, nil
+}
 
 // CreateClient 创建mqtt客户端
 func CreateClient(option MqttOption) (MqttClienter, error) {
-	client := &antClient{}
 	if option.Addr == "" {
 		return nil, errors.New("未设置mqtt连接")
 	}
-	_, err := url.Parse(option.Addr)
+	addrs, err := parseAddr(option.Addr)
 	if err != nil {
-		return nil, errors.New("未设置mqtt连接格式错误")
+		return nil, errors.New("设置mqtt连接格式错误")
 	}
-	client.addr = option.Addr
-	client.tls = option.TLS
+	client := &antClient{addrs: addrs, tls: option.TLS}
+
 	if option.ReconnTimeInterval > 0 {
 
 		client.reconnTimeInterval = time.Duration(option.ReconnTimeInterval) * time.Second
@@ -56,8 +70,19 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 	if err != nil {
 		return nil, err
 	}
+	client.connectPacket = createConnectPacket(option)
+	if option.KeepAlive > 0 {
+		client.keepAlive = time.Duration(option.KeepAlive) * time.Second
+	}
+	if option.HeartbeatCheckInterval > 0 {
+		client.heartbeatCheckInterval = time.Duration(option.HeartbeatCheckInterval) * time.Second
+	} else {
+		client.heartbeatCheckInterval = 5 * time.Second
+	}
+	return client, nil
+}
+func createConnectPacket(option MqttOption) *packet.Connect {
 	connectPacket := packet.NewConnect()
-	client.connectPacket = connectPacket
 	connectPacket.SetCleanSession(option.CleanSession)
 	if option.Clientid != "" {
 		connectPacket.SetClientIdByString(option.Clientid)
@@ -76,16 +101,7 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 		connectPacket.SetWillTopicInfo([]byte(option.WillTopic), option.WillPayload, packet.QoS(option.WillQos), option.WillRetain)
 	}
 	connectPacket.SetKeepAlive(option.KeepAlive)
-	if option.KeepAlive > 0 {
-		client.keepAlive = time.Duration(option.KeepAlive) * time.Second
-	}
-	if option.HeartbeatCheckInterval > 0 {
-		client.heartbeatCheckInterval = time.Duration(option.HeartbeatCheckInterval) * time.Second
-	} else {
-		client.heartbeatCheckInterval = 5 * time.Second
-	}
-	client.init()
-	return client, nil
+	return connectPacket
 }
 
 // MqttOption mqtt连接配置
@@ -140,12 +156,14 @@ func (c *baseClientStatus) init() {
 	c.pubcnt[PubCntQoS1] = &pubCnt{}
 	c.pubcnt[PubCntQoS2] = &pubCnt{}
 	c.pubcnt[PubCntTOTAL] = &pubCnt{}
+
 }
 
 type antClient struct {
 	mqttListen
 	//连接网址
-	addr string
+	addr  string
+	addrs []string
 	//tls配置
 	tls *tls.Config
 	//重连间隔
@@ -181,14 +199,29 @@ type antClient struct {
 	sendcond  *sync.Cond
 
 	connclosed bool
+
+	hasher conshash.ConsistentHashinger
 }
 
 func (c *antClient) SetPacketManager(manager PacketManager) {
 
 	c.packetManager = manager
 }
+
+func (c *antClient) addAddr(addrs []string) {
+	for _, addr := range addrs {
+		c.hasher.Put(addr, addr)
+	}
+}
+func (c *antClient) selectAddr(clientid string) string {
+	addr, _ := c.hasher.Get(clientid)
+	return addr
+}
+
 func (c *antClient) init() error {
 	c.baseClientStatus.init()
+	c.hasher = conshash.CreateConsistentHashinger(10)
+	c.addAddr(c.addrs)
 	return nil
 }
 func (c *antClient) IsConnect() bool {
@@ -202,14 +235,18 @@ func (c *antClient) Connect() error {
 	if c.connected {
 		return nil
 	}
+
 	c.connected = true
 	if c.packetManager == nil {
 		c.packetManager = NewMemPacketManager(c)
 		c.packetManager.Start()
-		c.recvChan = make(chan packet.MessagePacket)
+
 		c.sendcond = sync.NewCond(&c.connlock)
 
 	}
+	c.recvChan = make(chan packet.MessagePacket)
+	clientid := c.connectPacket.GetClientIdByString()
+	c.addr, _ = c.hasher.Get(clientid)
 
 	err := c.fisrtConnect()
 	if err != nil {
@@ -239,7 +276,9 @@ func (c *antClient) Disconnect() {
 	c.sendcond.L.Lock()
 	c.sendcond.Signal()
 	c.sendcond.L.Unlock()
+
 	close(c.recvChan)
+
 	c.disconnectWait.Wait()
 	c.fireOnDisconned(c)
 }

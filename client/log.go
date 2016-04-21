@@ -16,7 +16,7 @@ var (
 
 func init() {
 	Mlog.SetLogTag(LogMqttTag)
-	//Mlog.SetEnabled(false)
+	Mlog.SetEnabled(false)
 }
 
 // MlogInit 初始化日志配置
