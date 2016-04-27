@@ -146,7 +146,7 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 				alog.Error(l.network, ":", l.laddr, ":", "错误连接:", e)
 				break
 			}
-			alog.DebugTf(LogTag, l.laddr, "连入", conn.RemoteAddr(), "客户端")
+			alog.DebugTf(LogTag, "%s连入%s客户端", l.laddr, conn.RemoteAddr())
 
 			//fmt.Println(l.laddr, "连入", conn.RemoteAddr(), "客户端")
 			connchan <- NewMqttConn(conn)
