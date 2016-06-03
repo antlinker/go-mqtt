@@ -200,7 +200,7 @@ func (m *memSendPacketer) PopSend() *MqttPacket {
 	//Mlog.Debug("PopSend start")
 	for {
 
-		elem := m.send.Front()
+		elem := m.send.Back()
 		if elem != nil {
 			mp := elem.Value.(*MqttPacket)
 			m.send.Remove(elem)

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/antlinker/alog"
+	"github.com/kavu/go_reuseport"
 
 	"golang.org/x/net/websocket"
 )
@@ -112,21 +113,35 @@ type mqttlistener struct {
 	ws        *wsconf
 }
 
+func (l *mqttlistener) _listen() (err error) {
+	alog.Debug("++_+_+_:listen", l.network, l.laddr)
+	l.listener, err = reuseport.NewReusablePortListener(l.network, l.laddr)
+	if err != nil {
+		alog.Debug("++_+_+_1:", err)
+		l.listener, err = net.Listen(l.network, l.laddr)
+		if err != nil {
+			alog.Debug("++_+_+_2:", err)
+			return err
+		}
+	}
+	if l.tlsconfig != nil {
+		l.listener = tls.NewListener(l.listener, l.tlsconfig)
+	}
+	return nil
+}
 func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
-
+	err = l._listen()
+	if err != nil {
+		return nil
+	}
 	if l.ws != nil {
 		return l.listenws(connchan)
 	}
 	var tlstr = ""
 	if l.tlsconfig != nil {
-		l.listener, err = tls.Listen(l.network, l.laddr, l.tlsconfig)
 		tlstr = "(TLS)"
-	} else {
-		l.listener, err = net.Listen(l.network, l.laddr)
 	}
-	if err != nil {
-		return err
-	}
+
 	l.closewait.Add(1)
 	go func() {
 		defer func() {
@@ -157,13 +172,7 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 func (l *mqttlistener) listenws(connchan chan MQTTConner) (err error) {
 	var tlstr = "(ws)"
 	if l.tlsconfig != nil {
-		l.listener, err = tls.Listen(l.network, l.laddr, l.tlsconfig)
 		tlstr = "(ws|TLS)"
-	} else {
-		l.listener, err = net.Listen(l.network, l.laddr)
-	}
-	if err != nil {
-		return err
 	}
 
 	appServeMux := http.NewServeMux()

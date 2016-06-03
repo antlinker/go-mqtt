@@ -72,7 +72,7 @@ func (c *MqttWsConn) startCopy() {
 
 	}()
 
-	var count int
+	//	var count int
 	for {
 		var buffer []byte
 		if c.readtimeout > 0 {
@@ -84,8 +84,8 @@ func (c *MqttWsConn) startCopy() {
 			return
 		}
 
-		n := len(buffer)
-		count += n
+		//n := len(buffer)
+		//	count += n
 		i, err := c.writein.Write(buffer)
 		if err != nil || i < 1 {
 			return

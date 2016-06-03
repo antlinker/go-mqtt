@@ -8,14 +8,14 @@ import (
 
 type QoS uint8
 
-//带有报文标识的报文
+// PacketIdMessage 带有报文标识的报文
 type PacketIdMessage interface {
 	MessagePacket
 	GetPacketId() uint16
-	SetPacketId(packetId uint16)
+	SetPacketId(packetID uint16)
 }
 
-//qos1 qos2报文成功发送后的回执
+// PublishBackSuccessMessage qos1 qos2报文成功发送后的回执
 type PublishBackSuccessMessage interface {
 	GetPacketId() uint16
 }
