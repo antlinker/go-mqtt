@@ -114,13 +114,13 @@ type mqttlistener struct {
 }
 
 func (l *mqttlistener) _listen() (err error) {
-	alog.Debug("++_+_+_:listen", l.network, l.laddr)
+	alog.DebugTf(LogTag, "监听%s:%s", l.network, l.laddr)
 	l.listener, err = reuseport.NewReusablePortListener(l.network, l.laddr)
 	if err != nil {
-		alog.Debug("++_+_+_1:", err)
+		alog.DebugTf(LogTag, "端口复用失败：%v", err)
 		l.listener, err = net.Listen(l.network, l.laddr)
 		if err != nil {
-			alog.Debug("++_+_+_2:", err)
+			alog.DebugTf(LogTag, "端口绑定失败：%v", err)
 			return err
 		}
 	}
