@@ -58,9 +58,13 @@ func (m *MemPacketManager) init() {
 func (m *MemPacketManager) PopSend() *MqttPacket {
 	mp := m.memSendPacketer.PopSend()
 	if mp != nil {
-
+		if mp.Packet.GetHeaderType() == packet.TYPE_PUBLISH {
+			pub := mp.Packet.(*packet.Publish)
+			if pub.GetQos() == packet.QOS_0 {
+				return mp
+			}
+		}
 		m.memSendUnfinaler.MoveSendUnfinal(mp)
-
 		return mp
 	}
 	return nil
