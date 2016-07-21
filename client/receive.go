@@ -133,7 +133,6 @@ func (c *antClient) doPubrel(pubrel *packet.Pubrel) {
 		publish := mp.Packet.(*packet.Publish)
 		c.fireOnRecvPublish(c, publish.GetTopicByString(), publish.GetPayload(), QoS(publish.GetQos()))
 	}
-
 }
 
 //收到发布发布结束
@@ -155,12 +154,12 @@ func (c *antClient) doPubrec(pubrec *packet.Pubrec) {
 	if pkt != nil {
 		pkt.rectime = time.Now()
 		c.packetManager.AddSendQos2Pakcet(pkt)
-		//发送pubrel
-		pubrel := packet.NewPubrel()
-		pubrel.SetPacketId(pid)
-		c._send(pubrel)
-	}
 
+	}
+	//发送pubrel
+	pubrel := packet.NewPubrel()
+	pubrel.SetPacketId(pid)
+	c._send(pubrel)
 }
 
 func (c *antClient) doPuback(pubback *packet.Puback) {

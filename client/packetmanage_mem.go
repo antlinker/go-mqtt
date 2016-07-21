@@ -284,7 +284,7 @@ type memReceiveQos2 struct {
 //qos2存储id
 func (m *memReceiveQos2) AddReceivePacket(mp *MqttPacket) {
 
-	m.recvQsos2Map.Set(mp.Packet.GetPacketId(), mp)
+	m.recvQsos2Map.SetIfAbsent(mp.Packet.GetPacketId(), mp)
 
 }
 

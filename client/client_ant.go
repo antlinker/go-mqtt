@@ -115,7 +115,6 @@ type MqttOption struct {
 	//客户端标志
 	Clientid string
 	//清理会话标志
-	CleanSession bool
 	//用户名
 	UserName string
 	//密码
@@ -123,7 +122,8 @@ type MqttOption struct {
 	//保留消息主题
 	WillTopic string
 	//保留消息有效载荷
-	WillPayload []byte
+	WillPayload  []byte
+	CleanSession bool
 	//保留消息服务质量
 	WillQos QoS
 	//保留消息保留标志
@@ -189,16 +189,14 @@ type antClient struct {
 	//心跳间隔间隔　，发出心跳后，检测心跳间隔时间
 	heartbeatCheckInterval time.Duration
 
-	connected bool
-
 	connlock      sync.Mutex
 	packetManager PacketManager
 
-	issend    bool
-	isendlock sync.RWMutex
-	sendcond  *sync.Cond
-
+	connected  bool
+	issend     bool
 	connclosed bool
+	isendlock  sync.RWMutex
+	sendcond   *sync.Cond
 
 	hasher conshash.ConsistentHashinger
 }
