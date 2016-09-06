@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/antlinker/go-mqtt/packet"
 	//"fmt"
@@ -13,6 +12,11 @@ import (
 	"net"
 	"sync"
 	"time"
+)
+
+var (
+	// ErrPacketSize 超过最大报文长度限制
+	ErrPacketSize = errors.New("超过最大报文长度限制")
 )
 
 // MQTTConner mqtt连接接口
@@ -27,6 +31,10 @@ type MQTTConner interface {
 	ReadMessage() (packet.MessagePacket, error)
 	//发送消息报文
 	SendMessage(msg packet.MessagePacket) error
+	//设置最大报文大小，默认０不限制
+	SetMaxPacketSize(size int32)
+	// 获取最大报文大小
+	GetMaxPacketSize() int32
 }
 
 // Dial mqtt客户端连接
@@ -104,16 +112,23 @@ type MQTTConn struct {
 	conn         net.Conn
 	bufferReader *bufio.Reader
 	//bufferWrite  *bufio.Writer
-	closing    bool
-	closeclock sync.Mutex
-
+	closing       bool
+	maxPacketSize int32
+	closeclock    sync.Mutex
 	readerChannel chan packet.MessagePacket
-
-	readtimeout time.Duration
-
-	writeclock sync.Mutex
+	readtimeout   time.Duration
+	writeclock    sync.Mutex
 }
 
+// SetMaxPacketSize 设置最大报文大小，默认０不限制
+func (c *MQTTConn) SetMaxPacketSize(size int32) {
+	c.maxPacketSize = size
+}
+
+// GetMaxPacketSize 设置最大报文大小，默认０不限制
+func (c *MQTTConn) GetMaxPacketSize() int32 {
+	return c.maxPacketSize
+}
 func (c *MQTTConn) Read(b []byte) (n int, err error) {
 	if c.readtimeout > 0 {
 		c.SetReadDeadline(time.Now().Add(c.readtimeout))
@@ -223,7 +238,7 @@ func (c *MQTTConn) GetConn() net.Conn {
 	return c.conn
 }
 
-func readMessage(conn io.Reader) (packet.MessagePacket, error) {
+func readMessage(conn MQTTConner) (packet.MessagePacket, error) {
 	if conn == nil {
 		return nil, fmt.Errorf("连接为空")
 	}
@@ -274,7 +289,10 @@ func readMessage(conn io.Reader) (packet.MessagePacket, error) {
 	// Get the remaining length of the message
 
 	remlen, _ := packet.Bytes2Remlen(buf[1:])
-
+	msize := conn.GetMaxPacketSize()
+	if msize > 0 && msize < remlen {
+		return nil, ErrPacketSize
+	}
 	//alog.Debugf("Read message remlen: %d [%X] ", remlen, b)
 
 	rembuf := make([]byte, remlen)

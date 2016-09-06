@@ -23,18 +23,26 @@ func NewWsMqttConn(conn *websocket.Conn) *MqttWsConn {
 
 // MqttWsConn websocket连接
 type MqttWsConn struct {
-	sendwait   sync.WaitGroup
-	conn       *websocket.Conn
-	in         io.Reader
-	writein    *io.PipeWriter
-	closing    bool
-	closeclock sync.Mutex
-
-	readtimeout time.Duration
-
-	writeclock sync.Mutex
+	sendwait      sync.WaitGroup
+	conn          *websocket.Conn
+	in            io.Reader
+	writein       *io.PipeWriter
+	maxPacketSize int32
+	closing       bool
+	closeclock    sync.Mutex
+	readtimeout   time.Duration
+	writeclock    sync.Mutex
 }
 
+// GetMaxPacketSize 设置最大报文大小，默认０不限制
+func (c *MqttWsConn) GetMaxPacketSize() int32 {
+	return c.maxPacketSize
+}
+
+// SetMaxPacketSize 设置最大报文大小，默认０不限制
+func (c *MqttWsConn) SetMaxPacketSize(size int32) {
+	c.maxPacketSize = size
+}
 func (c *MqttWsConn) Read(b []byte) (n int, err error) {
 
 	n, err = c.in.Read(b)
