@@ -70,6 +70,11 @@ func Dial(network, address string, tlsconfig *tls.Config, connectPacket ...*pack
 	if len(connectPacket) == 0 {
 		return
 	}
+	if connectPacket[0].GetKeepAlive() > 0 {
+	} else {
+		conner.SetReadTimeout(10 * time.Second)
+
+	}
 	err = conner.SendMessage(connectPacket[0])
 	if err != nil {
 		err = createMqttError(ErrCodeNet, err.Error())

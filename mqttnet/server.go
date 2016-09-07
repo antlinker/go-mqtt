@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/antlinker/alog"
 	"github.com/kavu/go_reuseport"
@@ -14,29 +15,52 @@ import (
 )
 
 const (
+	defaultConnTimeout = 10 * time.Second //默认连接超时时间，从建立ｔｃｐ连接开始到读取到Connect报文截至，如果没在该时间读到报文则关闭连接
+)
+const (
 	// LogTag 日志标签
 	LogTag = "mqttSrvConn"
 )
 
 // ServerOption 服务
 type ServerOption struct {
-	MaxConnNum int
+	MaxConnNum  int
+	ConnTimeout time.Duration //连接超时时间，从建立ｔｃｐ连接开始到读取到Connect报文截至，如果没在该时间读到报文则关闭连接
 }
 
 // Server 服务实现
 type Server struct {
-	listeners []*mqttlistener
-	option    ServerOption
-	connchan  chan MQTTConner
-	runing    bool
-	lock      sync.Mutex
+	listeners   []*mqttlistener
+	option      ServerOption
+	connchan    chan MQTTConner
+	runing      bool
+	lock        sync.Mutex
+	connTimeout time.Duration
 }
 
 // Create 创建服务
 func Create(option *ServerOption) *Server {
+	no := *option
+	if no.ConnTimeout <= 0 {
+		no.ConnTimeout = defaultConnTimeout
+	}
 	return &Server{listeners: make([]*mqttlistener, 0),
-		option: *option,
-		runing: false,
+		option:      no,
+		connTimeout: no.ConnTimeout,
+		runing:      false,
+	}
+}
+
+// SetConnTimeout 设置连接超时时间，可以启动后再次改变
+func (s *Server) SetConnTimeout(to time.Duration) {
+	if to > 0 {
+		s.connTimeout = to
+		if len(s.listeners) > 0 {
+			return
+		}
+		for _, l := range s.listeners {
+			l.connTimeout = to
+		}
 	}
 }
 
@@ -45,7 +69,7 @@ func (s *Server) AddWebSocket(network string, laddr string, url string, tlsconfi
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr, tlsconfig: tlsconfig, ws: &wsconf{url: url}})
+	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr, tlsconfig: tlsconfig, ws: &wsconf{url: url}, connTimeout: s.connTimeout})
 
 }
 
@@ -53,7 +77,7 @@ func (s *Server) AddWebSocket(network string, laddr string, url string, tlsconfi
 func (s *Server) AddTLS(network string, laddr string, tlsconfig *tls.Config) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr, tlsconfig: tlsconfig})
+	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr, tlsconfig: tlsconfig, connTimeout: s.connTimeout})
 
 }
 
@@ -61,7 +85,7 @@ func (s *Server) AddTLS(network string, laddr string, tlsconfig *tls.Config) {
 func (s *Server) Add(network string, laddr string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr})
+	s.listeners = append(s.listeners, &mqttlistener{network: network, laddr: laddr, connTimeout: s.connTimeout})
 }
 
 // Start 开始服务
@@ -104,13 +128,14 @@ type wsconf struct {
 	url string
 }
 type mqttlistener struct {
-	listener  net.Listener
-	network   string
-	laddr     string
-	tlsconfig *tls.Config
-	closeing  bool
-	closewait sync.WaitGroup
-	ws        *wsconf
+	listener    net.Listener
+	network     string
+	laddr       string
+	tlsconfig   *tls.Config
+	closeing    bool
+	closewait   sync.WaitGroup
+	connTimeout time.Duration
+	ws          *wsconf
 }
 
 func (l *mqttlistener) _listen() (err error) {
@@ -171,7 +196,7 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 				break
 			}
 			alog.DebugTf(LogTag, "%s连入%s客户端", l.laddr, conn.RemoteAddr())
-
+			conn.SetReadDeadline(time.Now().Add(l.connTimeout))
 			//fmt.Println(l.laddr, "连入", conn.RemoteAddr(), "客户端")
 			connchan <- NewMqttConn(conn)
 		}
@@ -197,6 +222,7 @@ func (l *mqttlistener) listenws(connchan chan MQTTConner) (err error) {
 		// 	time.Sleep(10 * time.Microsecond)
 		// }
 		wsmqttconn := NewWsMqttConn(conn)
+		conn.SetReadDeadline(time.Now().Add(l.connTimeout))
 		connchan <- wsmqttconn
 		wsmqttconn.startCopy()
 		alog.DebugT(LogTag, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端，转发完成")
