@@ -44,6 +44,9 @@ func Create(option *ServerOption) *Server {
 	if no.ConnTimeout <= 0 {
 		no.ConnTimeout = defaultConnTimeout
 	}
+	if no.MaxConnNum <= 0 {
+		no.MaxConnNum = 1024
+	}
 	return &Server{listeners: make([]*mqttlistener, 0),
 		option:      no,
 		connTimeout: no.ConnTimeout,
@@ -95,9 +98,9 @@ func (s *Server) Start() (connchan chan MQTTConner, err error) {
 	if s.runing {
 		return
 	}
+	//connchan = make(chan MQTTConner, 1024)
 	connchan = make(chan MQTTConner, s.option.MaxConnNum)
 	s.connchan = connchan
-	//connchan = make(chan MQTTConner, s.option.MaxConnNum)
 	for _, mlistener := range s.listeners {
 		err = mlistener.listen(s.connchan)
 		if err != nil {
