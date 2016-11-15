@@ -66,7 +66,7 @@ func (c *antClient) _connect() (err error) {
 
 	c.fireOnConnStart(c)
 	u, _ := url.Parse(c.addr)
-	conn, merr := mqttnet.Dial(u.Scheme, u.Host, c.tls, c.connectPacket)
+	conn, merr := mqttnet.Dial(u.Scheme, u.Host, c.tls, c.createConnectPacket())
 	if merr != nil {
 
 		c.fireOnConnFailure(c, merr.GetErrCode(), merr)

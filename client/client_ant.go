@@ -70,7 +70,6 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.connectPacket = createConnectPacket(option)
 	if option.KeepAlive > 0 {
 		client.keepAlive = time.Duration(option.KeepAlive) * time.Second
 	}
@@ -79,59 +78,57 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 	} else {
 		client.heartbeatCheckInterval = 5 * time.Second
 	}
+	client.option = option
 	return client, nil
 }
-func createConnectPacket(option MqttOption) *packet.Connect {
-	connectPacket := packet.NewConnect()
-	connectPacket.SetCleanSession(option.CleanSession)
-	if option.Clientid != "" {
-		connectPacket.SetClientIdByString(option.Clientid)
-	} else {
-		connectPacket.SetClientIdByString(createRandomClientid())
-		connectPacket.SetCleanSession(true)
-	}
-	if option.UserName != "" {
+func (c *antClient) createConnectPacket() *packet.Connect {
+	option := c.option
+	if c.connectPacket == nil {
+		connectPacket := packet.NewConnect()
 
-		connectPacket.SetUserNameByString(option.UserName)
+		connectPacket.SetCleanSession(option.CleanSession)
+		if option.Clientid != "" {
+			connectPacket.SetClientIdByString(option.Clientid)
+		} else {
+			connectPacket.SetClientIdByString(createRandomClientid())
+			connectPacket.SetCleanSession(true)
+		}
+		if option.UserName != "" {
+
+			connectPacket.SetUserNameByString(option.UserName)
+		}
+		if option.WillTopic != "" {
+			connectPacket.SetWillTopicInfo([]byte(option.WillTopic), option.WillPayload, packet.QoS(option.WillQos), option.WillRetain)
+		}
+		connectPacket.SetKeepAlive(option.KeepAlive)
+		if option.Password != "" {
+			connectPacket.SetPasswordByString(option.Password)
+		}
+		c.connectPacket = connectPacket
 	}
-	if option.Password != "" {
-		connectPacket.SetPasswordByString(option.Password)
+
+	if option.Password == "" && option.PasswordHandler != nil {
+		c.connectPacket.SetPasswordByString(option.PasswordHandler())
 	}
-	if option.WillTopic != "" {
-		connectPacket.SetWillTopicInfo([]byte(option.WillTopic), option.WillPayload, packet.QoS(option.WillQos), option.WillRetain)
-	}
-	connectPacket.SetKeepAlive(option.KeepAlive)
-	return connectPacket
+	return c.connectPacket
 }
 
 // MqttOption mqtt连接配置
 type MqttOption struct {
-	//服务器ip端口
-	Addr string
-	//TLS配置
-	TLS *tls.Config
-	//设置重连时间重连时间<=0不重连　单位秒
-	ReconnTimeInterval int
-	//客户端标志
-	Clientid string
-	//清理会话标志
-	//用户名
-	UserName string
-	//密码
-	Password string
-	//保留消息主题
-	WillTopic string
-	//保留消息有效载荷
-	WillPayload  []byte
-	CleanSession bool
-	//保留消息服务质量
-	WillQos QoS
-	//保留消息保留标志
-	WillRetain bool
-	//保持会话时间
-	KeepAlive uint16
-	//心跳间隔间隔　，发出心跳后，检测心跳间隔时间单位秒
-	HeartbeatCheckInterval int
+	Addr                   string        //服务器ip端口
+	TLS                    *tls.Config   //TLS配置
+	ReconnTimeInterval     int           //设置重连时间重连时间<=0不重连　单位秒
+	Clientid               string        //客户端标志
+	UserName               string        //用户名
+	Password               string        //密码
+	PasswordHandler        func() string //密码生成函数
+	WillTopic              string        //保留消息主题
+	WillPayload            []byte        //保留消息有效载荷
+	CleanSession           bool          //清理会话标志
+	WillQos                QoS           //保留消息服务质量
+	WillRetain             bool          //保留消息保留标志
+	KeepAlive              uint16        //保持会话时间
+	HeartbeatCheckInterval int           //心跳间隔间隔　，发出心跳后，检测心跳间隔时间单位秒
 }
 
 type baseClientStatus struct {
@@ -161,44 +158,29 @@ func (c *baseClientStatus) init() {
 
 type antClient struct {
 	mqttListen
-	//连接网址
-	addr  string
-	addrs []string
-	//tls配置
-	tls *tls.Config
-	//重连间隔
-	reconnTimeInterval time.Duration
-	//服务器连接
-	conn mqttnet.MQTTConner
-	//连接报文
-	connectPacket *packet.Connect
-	//运行中需要等待
-	runGoWait sync.WaitGroup
-
-	//关闭时需要等待
-	disconnectWait sync.WaitGroup
-	//接收通道
-	recvChan chan packet.MessagePacket
-
-	sendChan  chan packet.MessagePacket
-	closeChan chan struct{}
-	//保持时间
-	keepAlive time.Duration
-
-	lasttime time.Time
-	//心跳间隔间隔　，发出心跳后，检测心跳间隔时间
-	heartbeatCheckInterval time.Duration
-
-	connlock      sync.Mutex
-	packetManager PacketManager
-
-	connected  bool
-	issend     bool
-	connclosed bool
-	isendlock  sync.RWMutex
-	sendcond   *sync.Cond
-
-	hasher conshash.ConsistentHashinger
+	addr                   string   //连接网址
+	addrs                  []string //tls配置
+	tls                    *tls.Config
+	reconnTimeInterval     time.Duration             //重连间隔
+	conn                   mqttnet.MQTTConner        //服务器连接
+	connectPacket          *packet.Connect           //连接报文
+	runGoWait              sync.WaitGroup            //运行中需要等待
+	disconnectWait         sync.WaitGroup            //关闭时需要等待
+	recvChan               chan packet.MessagePacket //接收通道
+	sendChan               chan packet.MessagePacket
+	closeChan              chan struct{}
+	keepAlive              time.Duration //保持时间
+	lasttime               time.Time
+	heartbeatCheckInterval time.Duration //心跳间隔间隔　，发出心跳后，检测心跳间隔时间
+	connlock               sync.Mutex
+	packetManager          PacketManager
+	connected              bool
+	issend                 bool
+	connclosed             bool
+	isendlock              sync.RWMutex
+	sendcond               *sync.Cond
+	hasher                 conshash.ConsistentHashinger
+	option                 MqttOption
 }
 
 func (c *antClient) SetPacketManager(manager PacketManager) {
@@ -243,7 +225,7 @@ func (c *antClient) Connect() error {
 
 	}
 	c.recvChan = make(chan packet.MessagePacket)
-	clientid := c.connectPacket.GetClientIdByString()
+	clientid := c.option.Clientid
 	c.addr, _ = c.hasher.Get(clientid)
 
 	err := c.fisrtConnect()
