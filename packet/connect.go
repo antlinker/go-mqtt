@@ -156,7 +156,7 @@ func (c *Connect) GetClientId() []byte {
 
 //获取客户端标识符
 func (c *Connect) GetClientIdByString() string {
-	return string(c.clientId)
+	return byte2str(c.clientId)
 }
 
 //设置遗嘱主题修改遗嘱标志为true
@@ -203,7 +203,7 @@ func (c *Connect) GetWillTopic() []byte {
 
 //获取遗嘱主题
 func (c *Connect) GetWillTopicByString() string {
-	return string(c.willTopic)
+	return byte2str(c.willTopic)
 }
 
 //获取遗嘱消息
@@ -213,7 +213,7 @@ func (c *Connect) GetWillMessage() []byte {
 
 //获取遗嘱消息
 func (c *Connect) GetWillMessageByString() string {
-	return string(c.willMessage)
+	return byte2str(c.willMessage)
 }
 
 //设置用户名
@@ -237,7 +237,7 @@ func (c *Connect) GetUserName() []byte {
 
 //获取用户名
 func (c *Connect) GetUserNameByString() string {
-	return string(c.userName)
+	return byte2str(c.userName)
 }
 
 //设置密码
@@ -261,7 +261,7 @@ func (c *Connect) GetPassword() []byte {
 
 //获取密码
 func (c *Connect) GetPasswordByString() string {
-	return string(c.password)
+	return byte2str(c.password)
 }
 func (c *Connect) totalRemain() int {
 	sum := 0
@@ -281,7 +281,7 @@ func (c *Connect) totalRemain() int {
 }
 
 func (c *Connect) String() string {
-	return fmt.Sprintf("协议:%s 协议级别:%d 清理会话:%t 遗嘱标志:%t 遗嘱Qos:%d 遗嘱保留标志:%t 密码标志:%t 用户名标志: %t 保持连接时间:%d 客户端id:%s 遗嘱主题:%s 遗嘱消息:%s 用户名:%s 密码:%s ", string(c.protocol), c.level, c.cleanSession, c.willFlag, c.willQoS, c.willRetain, c.passFlag, c.unameFlag, c.keepAlive, c.clientId, c.willTopic, c.willMessage, c.userName, c.password)
+	return fmt.Sprintf("协议:%s 协议级别:%d 清理会话:%t 遗嘱标志:%t 遗嘱Qos:%d 遗嘱保留标志:%t 密码标志:%t 用户名标志: %t 保持连接时间:%d 客户端id:%s 遗嘱主题:%s 遗嘱消息:%s 用户名:%s 密码:%s ", byte2str(c.protocol), c.level, c.cleanSession, c.willFlag, c.willQoS, c.willRetain, c.passFlag, c.unameFlag, c.keepAlive, c.clientId, c.willTopic, c.willMessage, c.userName, c.password)
 }
 
 func (c *Connect) UnPacket(header byte, msg []byte) error {
@@ -326,7 +326,7 @@ func (c *Connect) UnPacket(header byte, msg []byte) error {
 		if c.userName == nil || len(c.userName) == 0 {
 			return errors.New("用户名不能为空")
 		}
-		if !util.VerifyUnicodeByMqtt([]rune(string(c.userName))) {
+		if !util.VerifyUnicodeByMqtt([]rune(byte2str(c.userName))) {
 			return errors.New("用户名中有非法字符")
 		}
 	} else {
@@ -337,7 +337,7 @@ func (c *Connect) UnPacket(header byte, msg []byte) error {
 		if c.password == nil || len(c.password) == 0 {
 			return errors.New("密码不能为空")
 		}
-		if !util.VerifyUnicodeByMqtt([]rune(string(c.password))) {
+		if !util.VerifyUnicodeByMqtt([]rune(byte2str(c.password))) {
 			return errors.New("密码中有非法字符")
 		}
 	} else {

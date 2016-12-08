@@ -3,9 +3,11 @@ package packet
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 )
 
+// QoS 服务质量
 type QoS uint8
 
 // PacketIdMessage 带有报文标识的报文
@@ -20,11 +22,12 @@ type PublishBackSuccessMessage interface {
 	GetPacketId() uint16
 }
 
+// Value 服务质量
 func (qos QoS) Value() uint8 {
 	return uint8(qos)
 }
-func (qos *QoS) String() string {
-	return fmt.Sprintf("%d", qos)
+func (qos QoS) String() string {
+	return strconv.Itoa(int(qos))
 }
 
 type Topic struct {
@@ -40,7 +43,7 @@ func NewTopic(topic string) *Topic {
 	return t
 }
 
-//是否是有效主题
+// IsValidTopic 是否是有效主题
 func (t *Topic) IsValidTopic() bool {
 	if strings.Index(t.value, "+") >= 0 {
 		return false
@@ -65,7 +68,7 @@ func (t *Topic) GetTopicnode() []string {
 	return t.topicnode
 }
 
-//比较主题核主题过滤器
+//比较主题和主题过滤器
 func _compare(topics []string, filters []string) bool {
 
 	ti := 0
@@ -97,7 +100,7 @@ func _compare(topics []string, filters []string) bool {
 	return len(topics) == len(filters)
 }
 
-//比较主题核主题是否被过滤器所匹配
+// CompareFilter 比较主题核主题是否被过滤器所匹配
 // 返回 true 匹配 false 不匹配
 func (t *Topic) CompareFilter(filter *Topic) bool {
 	return _compare(t.topicnode, filter.topicnode)

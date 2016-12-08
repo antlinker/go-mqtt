@@ -156,7 +156,7 @@ func (c *Publish) GetTopic() []byte {
 
 //获取主题名
 func (c *Publish) GetTopicByString() string {
-	return string(c.topic)
+	return byte2str(c.topic)
 }
 
 //设置报文标识符
