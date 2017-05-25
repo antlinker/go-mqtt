@@ -185,10 +185,11 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 			alog.DebugTf(LogTag, l.network, ":", l.laddr, ":监听关闭退出")
 			l.closewait.Done()
 		}()
+
+		alog.DebugTf(LogTag, "监听%s:%s 成功", tlstr, l.laddr)
 		for {
 			//alog.DebugTf(LogTag,"等待客户端连入", l.laddr)
 			//fmt.Println("等待客户端连入", l.laddr)
-			alog.DebugTf(LogTag, "监听%s:%s 成功", tlstr, l.laddr)
 			conn, e := l.listener.Accept()
 			if e != nil {
 				if l.closeing {
