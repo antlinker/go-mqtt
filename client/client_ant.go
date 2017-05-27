@@ -81,6 +81,9 @@ func CreateClient(option MqttOption) (MqttClienter, error) {
 	client.option = option
 	return client, nil
 }
+func (c *antClient) GetOpt() MqttOption {
+	return c.option
+}
 func (c *antClient) createConnectPacket() *packet.Connect {
 	option := c.option
 	if c.connectPacket == nil {

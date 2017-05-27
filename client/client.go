@@ -38,6 +38,7 @@ type MqttClienter interface {
 	MqttUnSubscriber
 	MqttPackerListener
 	MqttDisConner
+	GetOpt() MqttOption
 }
 
 // MqttConner MQTT连接器
