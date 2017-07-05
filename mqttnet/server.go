@@ -186,7 +186,7 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 		defer func() {
 			if err := recover(); err != nil {
 				alog.Errorf("%s:%s 接收错误:%v", l.network, l.laddr, err)
-				debug.PrintStack()
+				alog.Error(string(debug.Stack()))
 			}
 			alog.DebugTf(LogTag, l.network, ":", l.laddr, ":监听关闭退出")
 			l.closewait.Done()
@@ -203,7 +203,7 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 					break
 				}
 				alog.Error(l.network, ":", l.laddr, ":", "错误连接:", e)
-				break
+				continue
 			}
 			alog.DebugTf(LogTag, "%s连入%s客户端", l.laddr, conn.RemoteAddr())
 			conn.SetReadDeadline(time.Now().Add(l.connTimeout))
