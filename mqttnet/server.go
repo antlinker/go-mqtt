@@ -11,6 +11,8 @@ import (
 	"github.com/antlinker/alog"
 	"github.com/kavu/go_reuseport"
 
+	"runtime/debug"
+
 	"golang.org/x/net/websocket"
 )
 
@@ -182,6 +184,10 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 	l.closewait.Add(1)
 	go func() {
 		defer func() {
+			if err := recover(); err != nil {
+				alog.Errorf("%s:%s 接收错误:%v", l.network, l.laddr, err)
+				debug.PrintStack()
+			}
 			alog.DebugTf(LogTag, l.network, ":", l.laddr, ":监听关闭退出")
 			l.closewait.Done()
 		}()
