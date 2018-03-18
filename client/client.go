@@ -30,6 +30,13 @@ type SubFilter struct {
 	qos    QoS
 }
 
+func (f SubFilter) Filter() string {
+	return f.filter
+}
+func (f SubFilter) QoS() QoS {
+	return f.qos
+}
+
 // MqttClienter MQTT客户端
 type MqttClienter interface {
 	MqttConner
