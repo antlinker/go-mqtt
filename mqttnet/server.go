@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/antlinker/alog"
 	"github.com/kavu/go_reuseport"
 
 	"runtime/debug"
@@ -106,12 +105,12 @@ func (s *Server) Start() (connchan chan MQTTConner, err error) {
 	for _, mlistener := range s.listeners {
 		err = mlistener.listen(s.connchan)
 		if err != nil {
-			alog.ErrorTf(LogTag, "启动网络服务:%s %s 失败:%v", mlistener.network, mlistener.laddr, err)
+			mlog.Errorf("启动网络服务:%s %s 失败:%v", mlistener.network, mlistener.laddr, err)
 			os.Exit(-1)
 		}
 	}
 	s.runing = true
-	alog.DebugTf(LogTag, "mqtt网络服务启动成功")
+	mlog.Debugf("mqtt网络服务启动成功")
 	return
 }
 
@@ -144,21 +143,21 @@ type mqttlistener struct {
 }
 
 func (l *mqttlistener) _listen() (err error) {
-	alog.DebugTf(LogTag, "监听%s:%s", l.network, l.laddr)
+	mlog.Debugf("监听%s:%s", l.network, l.laddr)
 	if l.network == "tcp4" || l.network == "tcp6" {
 		l.listener, err = reuseport.NewReusablePortListener(l.network, l.laddr)
 		if err != nil {
-			alog.DebugTf(LogTag, "端口复用失败：%v", err)
+			mlog.Debugf("端口复用失败：%v", err)
 			l.listener, err = net.Listen(l.network, l.laddr)
 			if err != nil {
-				alog.DebugTf(LogTag, "端口绑定失败：%v", err)
+				mlog.Debugf("端口绑定失败：%v", err)
 				return err
 			}
 		}
 	} else {
 		l.listener, err = net.Listen(l.network, l.laddr)
 		if err != nil {
-			alog.DebugTf(LogTag, "端口绑定失败：%v", err)
+			mlog.Debugf("端口绑定失败：%v", err)
 			return err
 		}
 	}
@@ -185,16 +184,16 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				alog.Errorf("%s:%s 接收错误:%v", l.network, l.laddr, err)
-				alog.Error(string(debug.Stack()))
+				mlog.Errorf("%s:%s 接收错误:%v", l.network, l.laddr, err)
+				mlog.Error(string(debug.Stack()))
 			}
-			alog.DebugTf(LogTag, l.network, ":", l.laddr, ":监听关闭退出")
+			mlog.Debug(l.network, ":", l.laddr, ":监听关闭退出")
 			l.closewait.Done()
 		}()
 
-		alog.DebugTf(LogTag, "监听%s:%s 成功", tlstr, l.laddr)
+		mlog.Debugf("监听%s:%s 成功", tlstr, l.laddr)
 		for {
-			//alog.DebugTf(LogTag,"等待客户端连入", l.laddr)
+			//mlog.Debugf("等待客户端连入", l.laddr)
 			//fmt.Println("等待客户端连入", l.laddr)
 			conn, e := l.listener.Accept()
 			if e != nil {
@@ -202,10 +201,10 @@ func (l *mqttlistener) listen(connchan chan MQTTConner) (err error) {
 					//正在关闭中
 					break
 				}
-				alog.Error(l.network, ":", l.laddr, ":", "错误连接:", e)
+				mlog.Error(l.network, ":", l.laddr, ":", "错误连接:", e)
 				continue
 			}
-			alog.DebugTf(LogTag, "%s连入%s客户端", l.laddr, conn.RemoteAddr())
+			mlog.Debugf("%s连入%s客户端", l.laddr, conn.RemoteAddr())
 			conn.SetReadDeadline(time.Now().Add(l.connTimeout))
 			//fmt.Println(l.laddr, "连入", conn.RemoteAddr(), "客户端")
 			connchan <- NewMqttConn(conn)
@@ -222,29 +221,29 @@ func (l *mqttlistener) listenws(connchan chan MQTTConner) (err error) {
 	appServeMux := http.NewServeMux()
 
 	appServeMux.Handle(l.ws.url, websocket.Handler(func(conn *websocket.Conn) {
-		alog.DebugT(LogTag, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端", conn.IsClientConn(), conn.IsServerConn())
+		mlog.Debug(l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端", conn.IsClientConn(), conn.IsServerConn())
 		// conn.Write([]byte("mqtt"))
 
-		alog.DebugT(LogTag, "连接状态：", conn.IsClientConn(), conn.IsServerConn())
+		mlog.Debug("连接状态：", conn.IsClientConn(), conn.IsServerConn())
 
 		// for !conn.IsClientConn() || !conn.IsServerConn() {
-		// 	alog.DebugTf(LogTag,"连接状态：", conn.IsClientConn(), conn.IsServerConn())
+		// 	mlog.Debugf("连接状态：", conn.IsClientConn(), conn.IsServerConn())
 		// 	time.Sleep(10 * time.Microsecond)
 		// }
 		wsmqttconn := NewWsMqttConn(conn)
 		conn.SetReadDeadline(time.Now().Add(l.connTimeout))
 		connchan <- wsmqttconn
 		wsmqttconn.startCopy()
-		alog.DebugT(LogTag, l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端，转发完成")
+		mlog.Debug(l.laddr, l.ws.url, "连入", conn.RemoteAddr(), "客户端，转发完成")
 	}))
 	//appServeMux.Handle(l.ws.url, wsserver)
 	go http.Serve(l.listener, appServeMux)
-	alog.DebugTf(LogTag, "监听%s:%s 成功", tlstr, l.laddr)
+	mlog.Debugf("监听%s:%s 成功", tlstr, l.laddr)
 	return nil
 }
 func (l *mqttlistener) close() {
 	l.closeing = true
 	l.listener.Close()
 	l.closewait.Wait()
-	alog.Debugf("mqtt网络服务已经关闭%s:%s", l.network, l.laddr)
+	mlog.Debugf("mqtt网络服务已经关闭%s:%s", l.network, l.laddr)
 }
