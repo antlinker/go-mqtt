@@ -210,6 +210,9 @@ func (c *antClient) init() error {
 func (c *antClient) IsConnect() bool {
 	return c.connected
 }
+func (c *antClient) ReConnect() error {
+	return c.reConnect()
+}
 
 //开始连接
 func (c *antClient) Connect() error {

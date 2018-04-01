@@ -58,6 +58,8 @@ type MqttConner interface {
 	AddConnListener(listener MqttConnListener)
 	//移除连接监听
 	RemoveConnListener(listener MqttConnListener)
+	// 中途重连
+	ReConnect() error
 }
 
 // MqttPublisher MQTT消息发布消息接收
