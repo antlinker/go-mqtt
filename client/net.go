@@ -40,11 +40,12 @@ func (c *antClient) reConnect() error {
 					time.Sleep(c.reconnTimeInterval)
 					continue
 				}
+				c.connclosed = false
+			} else {
+				c.connclosed = false
+				c.creReceive()
+				c.fireOnConnSuccess(c)
 			}
-			c.connclosed = false
-			c.creReceive()
-			c.fireOnConnSuccess(c)
-
 			break
 		}
 
