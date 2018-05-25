@@ -243,7 +243,9 @@ func (l *mqttlistener) listenws(connchan chan MQTTConner) (err error) {
 }
 func (l *mqttlistener) close() {
 	l.closeing = true
-	l.listener.Close()
+	if l.listener != nil {
+		l.listener.Close()
+	}
 	l.closewait.Wait()
 	mlog.Debugf("mqtt网络服务已经关闭%s:%s", l.network, l.laddr)
 }
