@@ -91,7 +91,7 @@ func (c *CacheFile) create() error {
 			return err
 		}
 	}
-	src += fmt.Sprint("%d", c.id)
+	src += fmt.Sprintf("%d", c.id)
 	tmp, err := os.Create(src)
 	if err != nil {
 		return err

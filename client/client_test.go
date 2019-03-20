@@ -81,7 +81,7 @@ var _ = Describe("测试客户端连接", func() {
 	//taskpool.Tlog.SetEnabled(true)
 	Mlog.SetEnabled(false)
 	var (
-		addr = "tcp://localhost:1883"
+		addr = "tcp://192.168.175.6:1883"
 	)
 
 	It("异步事件测试", func() {
