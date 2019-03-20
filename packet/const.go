@@ -1,5 +1,7 @@
 package packet
 
+import "errors"
+
 const (
 	//publish类型 缓存最小大小
 	PUBLISH_CACHE_MINLENGTH = 1024 * 1024 * 1024
@@ -119,4 +121,11 @@ const (
 	PARSE_NOT_ENOUGH_ALL         //解析字节不够，下次提供完整字节
 	PARSE_NOT_ENOUGH_LACK        //解析字节不够，下次提供新增字节
 	PARSE_REMAINDER              //剩余字节
+)
+
+var (
+	// ErrNoTopic PUBLISH 未设置主题
+	ErrNoTopic = errors.New("PUBLISH 未设置主题")
+	// 主题包含U+0000字符
+	ErrTopicU0000 = errors.New("主题包含U+0000字符")
 )

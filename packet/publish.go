@@ -5,7 +5,6 @@
 package packet
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -209,7 +208,7 @@ func formatPayload(payload []byte) string {
 	return fmt.Sprintf("(%d)%X", len(payload), payload[0:n])
 }
 func (c *Publish) String() string {
-	return fmt.Sprintf("PUBLISH重发标志:%t 服务质量等级(Qos):%d 保留标志:%t 主题名:%s 报文标志:%d  接收时间:%v有效载荷:%s", c.GetDupFlag(), c.GetQos(), c.GetRetain(), c.topic, c.packetId, c.ReciveStartTime, formatPayload(c.payload))
+	return fmt.Sprintf("PUBLISH DUP:%t QoS:%d Retain:%t Topic:%s id:%d time:%v payload:%s", c.GetDupFlag(), c.GetQos(), c.GetRetain(), c.topic, c.packetId, c.ReciveStartTime, formatPayload(c.payload))
 }
 
 //解包
@@ -217,6 +216,9 @@ func (c *Publish) UnPacket(header byte, msg []byte) error {
 	c.cache = false
 
 	c.remlen = len(msg)
+	if c.remlen < 2 {
+		return ErrNoTopic
+	}
 	// c.SetRetain(header&0x1 == 0x1)
 	// c.SetQos(QoS(header >> 1 & 0x3))
 	// c.SetDupFlag(header&0x8 == 0x8)
@@ -232,7 +234,7 @@ func (c *Publish) UnPacket(header byte, msg []byte) error {
 	}
 
 	if !util.VerifyZeroByMqtt([]rune(c.GetTopicByString())) {
-		return errors.New("主题包含U+0000字符关闭连接")
+		return ErrTopicU0000
 	}
 	//c.setBuffByRemdata(msg)
 	return nil

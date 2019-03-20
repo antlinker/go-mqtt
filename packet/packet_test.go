@@ -82,7 +82,7 @@ func TestPublishPacketAndUnPacket(t *testing.T) {
 		newconn.remlen = int(datalen)
 		fmt.Printf("%X\n", tmp[1+clen:])
 		newconn.UnPacket(tmp[0], tmp[1+clen:])
-		fmt.Printf("解析后结果:\n%s", newconn)
+		fmt.Printf("解析后结果:\n%v", newconn)
 
 	}
 
